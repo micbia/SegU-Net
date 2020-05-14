@@ -78,6 +78,14 @@ if(AUGMENTATION != False and AUGMENTATION > 1):
         X_gen, y_gen = DataGenerator(data=X, label=y, batch_size=size_pred_dataset,
                                        rotate_axis='random', rotate_angle='random', shuffle=True)
         X, y = np.vstack((X, X_gen)), np.vstack((y,y_gen))
+        
+        idxs_next, redshift_next, eff_fact_next, Rmfp_next, Tvir_next, xn_next = np.loadtxt(path+'astro_params.txt', unpack=True)
+        idxs = np.hstack((idxs, idxs_next))
+        redshift = np.hstack((redshift, redshift_next))
+        eff_fact = np.hstack((eff_fact, eff_fact_next))
+        Rmfp = np.hstack((Rmfp, Rmfp_next))
+        Tvir = np.hstack((Tvir, Tvir_next))
+        xn = np.hstack((xn, xn_next))
 
 # Load model
 try:
