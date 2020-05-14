@@ -19,6 +19,8 @@ class NetworkConfig:
         self.augment        = eval(trainconfig['AUGMENT'])
         self.img_shape      = tuple(np.array(eval(trainconfig['IMG_SHAPE']), dtype=int))
         self.chansize       = eval(trainconfig['CHAN_SIZE'])
+        self.dropout        = eval(trainconfig['DROPOUT'])
+        self.kernel_size    = eval(trainconfig['KENREL_SIZE'])
         self.epochs         = eval(trainconfig['EPOCHS'])
         self.loss           = trainconfig['LOSS']
         self.learn_rate     = eval(trainconfig['LR'])

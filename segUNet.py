@@ -33,6 +33,8 @@ BATCH_SIZE = conf.batch_size
 DATA_AUGMENTATION = conf.augment
 IM_SHAPE = conf.img_shape
 COARSE_DIM = conf.chansize
+DROPOUT = conf.dropout
+KS = conf.kernel_size
 EPOCHS = conf.epochs
 LOSS = conf.loss
 OPTIMIZER = Adam(lr=conf.learn_rate)
@@ -115,13 +117,13 @@ if(os.path.exists(RESUME_MODEL)):
 else: 
     print('\nModel created')
     if(GPU == None):
-        model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=3, dropout=0.05, path=PATH_OUT)
+        model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
     else:
         print('\nModel on GPU\n')
         tf.distribute.MirroredStrategy(devices=["/xla_gpu:0", "/xla_gpu:1"])
 
         with tf.device("/cpu:0"):
-            model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=3, dropout=0.05, path=PATH_OUT)
+            model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         model = multi_gpu_model(model, gpus=GPU)
     
     resume_loss = None
