@@ -50,9 +50,6 @@ class PredictionConfig:
         self.tta_wrap       = eval(predconfig['TTA_WRAP'])
         self.augmentation   = eval(predconfig['AUGMENT'])
         self.val            = eval(predconfig['EVAL'])
-        if(', ' in predconfig['PATH_PREDIC']):
-            self.path_pred  = predconfig['PATH_PREDIC'].split(', ')
-        else:
-            self.path_pred  = predconfig['PATH_PREDIC']
+        self.path_pred      = predconfig['PATH_PREDIC']
         self.path_out       = predconfig['PATH_OUT']
         self.indexes        = np.array(eval(predconfig['INDEXES']))
