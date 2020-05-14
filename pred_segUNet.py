@@ -18,6 +18,7 @@ from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss
 from utils_network.data_generator import TTA_ModelWrapper
 from utils.other_utils import get_data, save_cbin
 from utils_plot.plotting import plot_sample, plot_sample3D, plot_phicoef
+from utils_network.data_generator import DataGenerator
 
 
 title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | |  \| | ___| |_ \n\t\t| |  | | . ` |/ _ \ __|\n\t\t| |__| | |\  |  __/ |_ \n\t\t \____/|_| \_|\___|\__|\n'
