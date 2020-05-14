@@ -52,8 +52,8 @@ size_pred_dataset = X.shape[0]
 if(AUGMENTATION != False and AUGMENTATION > 1):
     for i in range(AUGMENTATION-1):
         generator = DataGenerator(data=X, label=y, batch_size=size_pred_dataset, rotate_axis='random', rotate_angle='random', shuffle=True)
-
-        X, y = np.vstack((X, generator.__getitem__(index=0)[0])), np.vstack((y, generator.__getitem__(index=0)[1]))
+        gen = generator.__getitem__(index=0)
+        X, y = np.vstack((X, gen[0])), np.vstack((y, gen[1]))
         
         idxs_next, redshift_next, eff_fact_next, Rmfp_next, Tvir_next, xn_next = np.loadtxt(PATH_PRED+'astro_params.txt', unpack=True)
         idxs = np.hstack((idxs, idxs_next))
