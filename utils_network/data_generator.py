@@ -70,13 +70,13 @@ class DataGenerator(Sequence):
         indexes = self.idx_list[index*self.batch_size:(index+1)*self.batch_size]
 
         X = np.array([self.callback(self.data[idx].squeeze()) for idx in indexes])
-        y = np.array([self.callback(self.label[idx].squeeze()) for idx in indexes])
-
-        # add channel dimension
         X = X[..., np.newaxis]
-        y = y[..., np.newaxis]
-
-        return X, y
+        if(y != None):
+            y = np.array([self.callback(self.label[idx].squeeze()) for idx in indexes])
+            y = y[..., np.newaxis]
+            return X, y
+        else:
+            return X
 
 
     def _flip_data(self, data):
@@ -132,18 +132,10 @@ class TTA_ModelWrapper():
         model (keras model): A fitted keras model with a predict method.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, generator):
         self.model = model
 
     def predict(self, X):
-        """ Wraps the predict method of the provided model.
-            Augments the testdata with horizontal and vertical flips and
-            averages the results.
-            
-            Args:
-                X (numpy array of dim 4 or larger): The data to get predictions for.
-        """
-
         pred = []
         for i in tqdm(range(X.shape[0])):
             p0 = self.model.predict(X[i][np.newaxis, ...]).squeeze()
@@ -153,7 +145,7 @@ class TTA_ModelWrapper():
             p =  (p0 + np.fliplr(p1) + np.flipud(p2) + np.fliplr(np.flipud(p3))) * 0.25
             pred.append(p)
         return np.array(pred)
-
+    
     def _expand(self, x):
         return np.expand_dims(np.expand_dims(x, axis=0), axis=3)
 

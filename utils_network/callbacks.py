@@ -105,7 +105,6 @@ class ReduceLR(Callback):
         self._reset()
 
     def on_epoch_end(self, epoch, logs=None):
-        print(self.wait)
         logs = logs or {}
         logs['lr'] = K.get_value(self.model.optimizer.lr)
         current = logs.get(self.monitor)

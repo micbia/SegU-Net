@@ -19,6 +19,14 @@ from utils_network.data_generator import TTA_ModelWrapper
 from utils.other_utils import get_data, save_cbin
 from utils_plot.plotting import plot_sample, plot_sample3D, plot_phicoef
 
+
+title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | |  \| | ___| |_ \n\t\t| |  | | . ` |/ _ \ __|\n\t\t| |__| | |\  |  __/ |_ \n\t\t \____/|_| \_|\___|\__|\n'
+title_b = ' _____              _ _      _         ___  __                \n|  __ \            | (_)    | |       |__ \/_ |               \n| |__) | __ ___  __| |_  ___| |_ ___     ) || | ___ _ __ ___  \n|  ___/ `__/ _ \/ _` | |/ __| __/ __|   / / | |/ __| `_ ` _ \ \n| |   | | |  __/ (_| | | (__| |_\__ \  / /_ | | (__| | | | | |\n|_|   |_|  \___|\__,_|_|\___|\__|___/ |____||_|\___|_| |_| |_|\n'
+print(title_a+'\n'+title_b)
+
+RANDOM_SEED = 2020
+random.seed(RANDOM_SEED)
+
 config_file = sys.argv[1]
 conf = PredictionConfig(config_file)
 
@@ -26,6 +34,8 @@ MODEL_EPOCH = conf.model_epoch
 IM_SHAPE = conf.img_shape
 METRICS = [iou, dice_coef, 'binary_accuracy']
 TTA_WRAP = conf.tta_wrap
+AUGMENTATION = conf.augmentation
+EVAL = conf.val
 PATH_PRED = conf.path_pred
 PATH_OUT = conf.path_out
 IDX = conf.indexes
@@ -36,7 +46,7 @@ if isinstance(PATH_PRED, (list, np.ndarray)):
         if(j == 0):
             print('Load dataset path %d ...' %(j+1)) 
             X, y = get_data(path+'data/', IM_SHAPE)
-
+            
             # get parameters of dataset
             idxs, redshift, eff_fact, Rmfp, Tvir, xn = np.loadtxt(path+'astro_params.txt', unpack=True)
         else:
@@ -60,16 +70,24 @@ else:
     # Get data
     X, y = get_data(PATH_PRED+'data/', IM_SHAPE)
 
+size_pred_dataset = X.shape[0]            
+
+# Data augmentation by stucking togheter prediction datas
+if(AUGMENTATION != False and AUGMENTATION > 1):
+    for i in range(AUGMENTATION-1):
+        X_gen, y_gen = DataGenerator(data=X, label=y, batch_size=size_pred_dataset,
+                                       rotate_axis='random', rotate_angle='random', shuffle=True)
+        X, y = np.vstack((X, X_gen)), np.vstack((y,y_gen))
 
 # Load model
 try:
-    model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT, MODEL_EPOCH))
+    model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT+'checkpoints/', MODEL_EPOCH))
 except:
     cb = {} 
     for func in METRICS: 
         if not isinstance(func, str): 
             cb[func.__name__] = func 
-    model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT, MODEL_EPOCH), custom_objects=cb)
+    model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT+'checkpoints/', MODEL_EPOCH), custom_objects=cb)
 
 
 # Create predictions output directory
@@ -86,11 +104,13 @@ if(TTA_WRAP):
     predictions = tta_model.predict(X)
 else:
     predictions = model.predict(X, verbose=1).squeeze()
-resume_metrics = model.evaluate(X, y, verbose=1)
-msg = '\nAccuracy Score:\n'
-for i, metric in enumerate(resume_metrics):
-    msg += ' %s: %.3f   ' %(model.metrics_names[i], metric) 
-print(msg)
+
+if(EVAL):
+    resume_metrics = model.evaluate(X, y, verbose=1)
+    msg = '\nAccuracy Score:\n'
+    for i, metric in enumerate(resume_metrics):
+        msg += ' %s: %.3f   ' %(model.metrics_names[i], metric) 
+    print(msg)
 
 
 # Plot matthews_corrcoef

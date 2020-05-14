@@ -68,8 +68,6 @@ os.system('cp -r utils %s/source' %PATH_OUT)
 os.system('cp -r utils_network %s/source' %PATH_OUT)
 os.system('cp -r utils_plot %s/source' %PATH_OUT)
 os.system('cp -r config %s/source' %PATH_OUT)
-os.system('cp %s %s/source' %(config_file, PATH_OUT))
-
 
 # Load data
 if isinstance(PATH_TRAIN, (list, np.ndarray)):

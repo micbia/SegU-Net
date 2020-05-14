@@ -48,6 +48,8 @@ class PredictionConfig:
         self.img_shape      = tuple(np.array(eval(predconfig['IMG_SHAPE']), dtype=int))
         self.model_epoch    = eval(predconfig['MODEL_EPOCH'])
         self.tta_wrap       = eval(predconfig['TTA_WRAP'])
+        self.augmentation   = eval(predconfig['AUGMENT'])
+        self.val            = eval(predconfig['EVAL'])
         if(', ' in predconfig['PATH_PREDIC']):
             self.path_pred  = predconfig['PATH_PREDIC'].split(', ')
         else:
