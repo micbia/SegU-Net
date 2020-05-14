@@ -9,7 +9,7 @@ to train the network on data at you disposal you can change the directory path v
 
 If you want to resume a training change the parameters <i>BEST_EPOCH</i> and <i>RESUME_EPOCH</i> in the same initial condition file, the first indicates the epoch of the best saved model, the second is the restarting epoch. These quantities should be both zero if you are starting a new training. You also must provide the output directory <i>RESUME_PATH</i> of the interrupted training (genertaed by the code). Our code save the entire network (weights and layers) so that, in case of resumed trainig the model is already compiled (keras: load_model).
 
-Also, the number of down- and up-sampling levels are automatically scales depending on the images size (between 64 and 128 per side, 3 levels. Above equal 128, 4 levels).
+Also, the number of down- and up-sampling levels are automatically scales depending on the images size (between 64 and 128 per side, 4 levels. Above equal 128, 5 levels).
 
 </br>
 <b>Seg U-Net Predicts 21cm:</b></br>
