@@ -13,8 +13,7 @@ Also, the number of down- and up-sampling levels are automatically scales depend
 
 </br>
 <b>Seg U-Net Predicts 21cm:</b></br>
-to do some predcitions with your best trained network, use:</br>
-
+to do some predcitions with your best trained network, use:</br></br>
 
 &emsp;&#9654;&emsp; python pred_segUnet.py config/pred.ini
 
