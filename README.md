@@ -20,6 +20,6 @@ in the initial condition file <i>pred.ini</i>, change:</br>
 <ul>
   <li><i>PATH_OUT</i> is the directory of the best performing model.</li>
   <li><i>PATH_PREDIC</i> is the path of the data to predict (same structure as in <i>net.ini</i> file)</li>
-  <li><i>AUGMENT</i> is the number of times you want to (random flip of 90, 180, 270 or 360 along the x, y or z-axis)
+  <li><i>AUGMENT</i> is the number of times you want to increase your data set (random flip of 90, 180, 270 or 360 along the x, y or z-axis)
 </li>
 </ul> 
