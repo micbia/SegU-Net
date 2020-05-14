@@ -158,9 +158,11 @@ else:
                                   callbacks=callbacks,
                                   validation_data=valid_generator,
                                   shuffle=True)
-                                  
+
+
 # Plot Loss
 plot_loss(output=results, path=PATH_OUT+'outputs/')
+
 
 # copy weight to output directory
 os.system('mv %s %s_acc%d' %(PATH_OUT[:-1], PATH_OUT[:-1], 100*np.max(results.history["val_binary_accuracy"])))
