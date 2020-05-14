@@ -93,7 +93,7 @@ def Unet(img_shape, coarse_dim, ks=3, dropout=0.05, path='./'):
         e3 = MaxPooling3D(pool_size=(2, 2, 2), name='E3_P')(e3c)
         e3 = Dropout(dropout, name='E3_D2')(e3)  
 
-    if(img_shape[0] == 64):
+    if(img_shape[0] >= 64 and img_shape[0] < 128):
         # U-Net Encoder - bottom level
         if(np.size(img_shape) == 3):
             # 2-D network
@@ -107,7 +107,7 @@ def Unet(img_shape, coarse_dim, ks=3, dropout=0.05, path='./'):
             
             d3 = Conv3DTranspose(filters=int(coarse_dim/4), kernel_size=(ks, ks, ks), 
                                 strides=(2, 2, 2), padding='same', name='D3_DC')(b)
-    elif(img_shape[0] == 128):
+    elif(img_shape[0] >= 128):
         if(np.size(img_shape) == 3):
             # 2-D network
             # U-Net Encoder - fourth level
