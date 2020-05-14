@@ -41,35 +41,13 @@ PATH_OUT = conf.path_out
 IDX = conf.indexes
 
 # Load data
-if isinstance(PATH_PRED, (list, np.ndarray)):
-    for j, path in enumerate(PATH_PRED):
-        if(j == 0):
-            print('Load dataset path %d ...' %(j+1)) 
-            X, y = get_data(path+'data/', IM_SHAPE)
-            
-            # get parameters of dataset
-            idxs, redshift, eff_fact, Rmfp, Tvir, xn = np.loadtxt(path+'astro_params.txt', unpack=True)
-        else:
-            print('Load images path %d ...' %(j+1))
-            X_next, y_next = get_data(path+'data/', IM_SHAPE)
-            X, y = np.vstack((X, X_next)), np.vstack((y,y_next))
 
-            # get parameters of dataset
-            idxs_next, redshift_next, eff_fact_next, Rmfp_next, Tvir_next, xn_next = np.loadtxt(path+'astro_params.txt', unpack=True)
-            idxs = np.hstack((idxs, idxs_next))
-            redshift = np.hstack((redshift, redshift_next))
-            eff_fact = np.hstack((eff_fact, eff_fact_next))
-            Rmfp = np.hstack((Rmfp, Rmfp_next))
-            Tvir = np.hstack((Tvir, Tvir_next))
-            xn = np.hstack((xn, xn_next))
-else:
-    print('Load dataset ...') 
-    # get parameters of dataset
-    idxs, redshift, eff_fact, Rmfp, Tvir, xn = np.loadtxt(PATH_PRED+'astro_params.txt', unpack=True)
+print('Load dataset ...') 
+# get parameters of dataset
+idxs, redshift, eff_fact, Rmfp, Tvir, xn = np.loadtxt(PATH_PRED+'astro_params.txt', unpack=True)
 
-    # Get data
-    X, y = get_data(PATH_PRED+'data/', IM_SHAPE)
-
+# Get data
+X, y = get_data(PATH_PRED+'data/', IM_SHAPE)
 size_pred_dataset = X.shape[0]            
 
 # Data augmentation by stucking togheter prediction datas
@@ -118,7 +96,7 @@ if(EVAL):
     msg = '\nAccuracy Score:\n'
     for i, metric in enumerate(resume_metrics):
         msg += ' %s: %.3f   ' %(model.metrics_names[i], metric) 
-    print(msg)
+    print(msg+'\n')
 
 
 # Plot matthews_corrcoef
