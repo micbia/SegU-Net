@@ -71,12 +71,11 @@ class DataGenerator(Sequence):
 
         X = np.array([self.callback(self.data[idx].squeeze()) for idx in indexes])
         X = X[..., np.newaxis]
-        if(y != None):
-            y = np.array([self.callback(self.label[idx].squeeze()) for idx in indexes])
-            y = y[..., np.newaxis]
-            return X, y
-        else:
-            return X
+        
+        y = np.array([self.callback(self.label[idx].squeeze()) for idx in indexes])
+        y = y[..., np.newaxis]
+        return X, y
+
 
 
     def _flip_data(self, data):

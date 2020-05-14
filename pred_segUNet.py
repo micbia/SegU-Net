@@ -51,11 +51,11 @@ size_pred_dataset = X.shape[0]
 # Data augmentation by stucking togheter prediction datas
 if(AUGMENTATION != False and AUGMENTATION > 1):
     for i in range(AUGMENTATION-1):
-        X_gen, y_gen = DataGenerator(data=X, label=y, batch_size=size_pred_dataset,
-                                       rotate_axis='random', rotate_angle='random', shuffle=True)
-        X, y = np.vstack((X, X_gen)), np.vstack((y,y_gen))
+        generator = DataGenerator(data=X, label=y, batch_size=size_pred_dataset, rotate_axis='random', rotate_angle='random', shuffle=True)
+
+        X, y = np.vstack((X, generator.__getitem__(index=0)[0])), np.vstack((y, generator.__getitem__(index=0)[1]))
         
-        idxs_next, redshift_next, eff_fact_next, Rmfp_next, Tvir_next, xn_next = np.loadtxt(path+'astro_params.txt', unpack=True)
+        idxs_next, redshift_next, eff_fact_next, Rmfp_next, Tvir_next, xn_next = np.loadtxt(PATH_PRED+'astro_params.txt', unpack=True)
         idxs = np.hstack((idxs, idxs_next))
         redshift = np.hstack((redshift, redshift_next))
         eff_fact = np.hstack((eff_fact, eff_fact_next))
