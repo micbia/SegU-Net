@@ -1,7 +1,7 @@
 # SegU-Net
 Segmentation 3D Convolutional U-Network for Identification of HI regions during Reionization in 21-cm Tomography Observations
 
-<b>Seg U-Net Utilization:</b></br>
+<b>Seg U-Net Training Utilization:</b></br>
 to train the network on data at you disposal you can change the directory path variable <i>PATH</i> in the initial condition files <i>net.ini</i>, as well as other hypeparameters. The actual data should be stored at this location in a sub-directory called <i>data/</i>.
 </br>Then run the following command:</br>
 
@@ -12,6 +12,7 @@ If you want to resume a training change the parameters <i>BEST_EPOCH</i> and <i>
 Also, the number of down- and up-sampling levels are automatically scales depending on the images size (between 64 and 128 per side, 3 levels. Above equal 128, 4 levels).
 
 </br>
+<b>Seg U-Net Predicts 21cm:</b></br>
 to do some predcitions with our best network or yours, use:
 
 &emsp;&#9654;&emsp; python pred_segUnet.py config/pred.ini
