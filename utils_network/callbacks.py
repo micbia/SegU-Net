@@ -61,7 +61,7 @@ class ReduceLR(Callback):
     " Copied original code, added 'wait' to init parameters for resuming training"
     def __init__(self, monitor='val_loss', factor=0.1, patience=10,
                  verbose=0, mode='auto', min_delta=1e-4, cooldown=0, 
-                 min_lr=0, wait=0, **kwargs):
+                 min_lr=0, wait=0, best=None, **kwargs):
         super(ReduceLR, self).__init__()
 
         self.monitor = monitor
@@ -80,7 +80,7 @@ class ReduceLR(Callback):
         self.cooldown = cooldown
         self.cooldown_counter = 0  # Cooldown counter.
         self.wait = wait
-        self.best = 0
+        self.best = best
         self.mode = mode    
         self.monitor_op = None
         self._reset()
@@ -88,17 +88,18 @@ class ReduceLR(Callback):
     def _reset(self):
         """Resets wait counter and cooldown counter.
         """
-        if self.mode not in ['auto', 'min', 'max']:
+        if(self.mode not in ['auto', 'min', 'max']):
             warnings.warn('Learning Rate Plateau Reducing mode %s is unknown, '
                           'fallback to auto mode.' % (self.mode), RuntimeWarning)
             self.mode = 'auto'
-        if (self.mode == 'min' or
-           (self.mode == 'auto' and 'acc' not in self.monitor)):
+        if(self.mode == 'min' or (self.mode == 'auto' and 'acc' not in self.monitor)):
             self.monitor_op = lambda a, b: np.less(a, b - self.min_delta)
-            self.best = np.Inf
+            if(self.best == None):
+                self.best = np.Inf
         else:
             self.monitor_op = lambda a, b: np.greater(a, b + self.min_delta)
-            self.best = -np.Inf
+            if(self.best == None):
+                self.best = -np.Inf
         self.cooldown_counter = 0
 
     def on_train_begin(self, logs=None):
@@ -114,11 +115,11 @@ class ReduceLR(Callback):
                 'which is not available. Available metrics are: %s' %
                 (self.monitor, ','.join(list(logs.keys()))), RuntimeWarning)
         else:
-            if self.in_cooldown():
+            if(self.in_cooldown()):
                 self.cooldown_counter -= 1
                 self.wait = 0
 
-            if self.monitor_op(current, self.best):
+            if(self.monitor_op(current, self.best)):
                 self.best = current
                 self.wait = 0
             elif not self.in_cooldown():
@@ -130,8 +131,7 @@ class ReduceLR(Callback):
                         new_lr = max(new_lr, self.min_lr)
                         K.set_value(self.model.optimizer.lr, new_lr)
                         if self.verbose > 0:
-                            print('\nEpoch %05d: ReduceLROnPlateau reducing '
-                                  'learning rate to %s.' % (epoch + 1, new_lr))
+                            print('\nEpoch %05d: ReduceLROnPlateau reducing learning rate to %s.' % (epoch + 1, new_lr))
                         self.cooldown_counter = self.cooldown
                         self.wait = 0
 
@@ -143,7 +143,7 @@ class SaveModelCheckpoint(Callback):
     " Copied original code, added 'prev_best' to init parameters for resuming training"
     def __init__(self, filepath, monitor='val_loss', verbose=0,
                  save_best_only=False, save_weights_only=False,
-                 mode='auto', period=1, prev_best=None):
+                 mode='auto', period=1, best=None):
         super(SaveModelCheckpoint, self).__init__()
         self.monitor = monitor
         self.verbose = verbose
@@ -152,41 +152,29 @@ class SaveModelCheckpoint(Callback):
         self.save_weights_only = save_weights_only
         self.period = period
         self.epochs_since_last_save = 0
+        self.best = best
 
         if mode not in ['auto', 'min', 'max']:
-            warnings.warn('SaveModelCheckpoint mode %s is unknown, '
-                          'fallback to auto mode.' % (mode),
-                          RuntimeWarning)
+            warnings.warn('SaveModelCheckpoint mode %s is unknown, fallback to auto mode.' % (mode), RuntimeWarning)
             mode = 'auto'
         
-        if(prev_best == None):
-            if mode == 'min':
-                self.monitor_op = np.less
+        if mode == 'min':
+            self.monitor_op = np.less
+            if(self.best == None):
                 self.best = np.Inf
-            elif mode == 'max':
-                self.monitor_op = np.greater
+        elif mode == 'max':
+            self.monitor_op = np.greater
+            if(self.best == None):
                 self.best = -np.Inf
-            else:
-                if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
-                    self.monitor_op = np.greater
-                    self.best = -np.Inf
-                else:
-                    self.monitor_op = np.less
-                    self.best = np.Inf
         else:
-            if mode == 'min':
-                self.monitor_op = np.less
-                self.best = prev_best
-            elif mode == 'max':
+            if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
                 self.monitor_op = np.greater
-                self.best = prev_best
+                if(self.best == None):
+                    self.best = -np.Inf
             else:
-                if 'acc' in self.monitor or self.monitor.startswith('fmeasure'):
-                    self.monitor_op = np.greater
-                    self.best = prev_best
-                else:
-                    self.monitor_op = np.less
-                    self.best = prev_best
+                self.monitor_op = np.less
+                if(self.best == None):
+                    self.best = np.Inf
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -197,15 +185,11 @@ class SaveModelCheckpoint(Callback):
             if self.save_best_only:
                 current = logs.get(self.monitor)
                 if current is None:
-                    warnings.warn('Can save best model only with %s available, '
-                                  'skipping.' % (self.monitor), RuntimeWarning)
+                    warnings.warn('Can save best model only with %s available, skipping.' % (self.monitor), RuntimeWarning)
                 else:
                     if self.monitor_op(current, self.best):
                         if self.verbose > 0:
-                            print('\nEpoch %05d: %s improved from %0.5f to %0.5f,'
-                                  ' saving model to %s'
-                                  % (epoch + 1, self.monitor, self.best,
-                                     current, filepath))
+                            print('\nEpoch %05d: %s improved from %0.5f to %0.5f, saving model to %s' %(epoch + 1, self.monitor, self.best, current, filepath))
                         self.best = current
                         if self.save_weights_only:
                             self.model.save_weights(filepath, overwrite=True)
@@ -213,8 +197,7 @@ class SaveModelCheckpoint(Callback):
                             self.model.save(filepath, overwrite=True)
                     else:
                         if self.verbose > 0:
-                            print('\nEpoch %05d: %s did not improve from %0.5f' %
-                                  (epoch + 1, self.monitor, self.best))
+                            print('\nEpoch %05d: %s did not improve from %0.5f' %(epoch + 1, self.monitor, self.best))
             else:
                 if self.verbose > 0:
                     print('\nEpoch %05d: saving model to %s' % (epoch + 1, filepath))

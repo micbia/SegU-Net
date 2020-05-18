@@ -79,13 +79,13 @@ class DataGenerator(Sequence):
 
 
     def _flip_data(self, data):
-        """flip array along specified axis(x, y or z)"""
-        if(self.flip_axis in (0, 1, 2, 3)):
+        """flip 2D array along specified axis (x or y)"""
+        if(self.flip_axis in (0, 1, 2)):
             pass
         elif(self.flip_axis == 'random'):
-            self.flip_axis = random.randint(0, 3)
+            self.flip_axis = random.randint(0, 2)
         else:
-            raise ValueError('Flip axis should be 0, 1, 2, 3 or random')
+            raise ValueError('Flip axis should be 0, 1, 2 or random')
 
         if(self.flip_axis == 0):
             flip_data = data
@@ -100,7 +100,7 @@ class DataGenerator(Sequence):
         if self.rotate_axis in (1, 2, 3):
             pass
         elif self.rotate_axis == 'random':
-            self.rotate_axis = random.randint(1, 3)
+            rotaxis = random.randint(1, 3)
         else:
             raise ValueError('Rotate axis should be 1, 2, 3 or random')
         
@@ -111,15 +111,15 @@ class DataGenerator(Sequence):
         else:
             raise ValueError('Rotate angle should be 90, 180, 270, 360 or random')
         
-        if self.rotate_axis == 1:
+        if rotaxis == 1:
             ax_tup = (1, 2)
-        elif self.rotate_axis == 2:
+        elif rotaxis == 2:
             ax_tup = (2, 0)
-        elif self.rotate_axis == 3:
+        elif rotaxis == 3:
             ax_tup = (0, 1)
         else:
             raise ValueError('rotate axis should be 1, 2 or 3')
-        
+        print(rotation, rotaxis)
         return np.rot90(data, k=rotation, axes=ax_tup)
 
 

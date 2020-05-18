@@ -129,8 +129,8 @@ else:
 
 
 callbacks = [EarlyStopping(patience=20, verbose=1),
-             ReduceLR(factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH)),
-             SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, prev_best=resume_loss),
+             ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH), best=resume_loss),
+             SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=resume_loss),
              HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]
 
 
@@ -144,10 +144,14 @@ if not (DATA_AUGMENTATION):
                         shuffle=True)
 else:
     print('\nData augmentation: random rotation of 90, 180, 270 or 360 deg for x,y or z-axis...\n')
-    train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
-                                    rotate_axis='random', rotate_angle='random', shuffle=True)
-    valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
-                                    rotate_axis='random', rotate_angle='random', shuffle=True)
+    if(len(IM_SHAPE) == 3):
+        train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
+                                        rotate_axis='random', rotate_angle='random', shuffle=True)
+        valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
+                                        rotate_axis='random', rotate_angle='random', shuffle=True)
+    elif(len(IM_SHAPE) == 2):z
+        train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE, flip_axis='random', shuffle=True)
+        valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE, flip_axis='random', shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),
