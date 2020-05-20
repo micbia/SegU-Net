@@ -12,7 +12,7 @@ def Unet(img_shape, coarse_dim, ks=3, dropout=0.05, path='./'):
     # print message at runtime
     if(img_shape[0] == 64 and np.size(img_shape) == 3):
         print('Create 2D U-Net network with 3 levels...\n')
-    elif(img_shape[0] == 64 and np.size(img_shape) == 3):
+    elif(img_shape[0] == 128 and np.size(img_shape) == 3):
         print('Create 2D U-Net network with 4 levels...\n')
     elif(img_shape[0] == 64 and np.size(img_shape) == 4):
         print('Create 3D U-Net network with 3 levels...\n')
