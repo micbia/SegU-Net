@@ -27,10 +27,13 @@ class HistoryCheckpoint(Callback):
             
             self.prev_epoch = int(metric[metric.rfind('-')+1: metric.find('.txt')])
 
-
     def on_epoch_end(self, epoch, logs=None):
-        fname = self.filepath+'%s_ep-%d.txt'
+        if(epoch == self.in_epoch): 
+            for mname in logs:
+                self.stor_arr[mname] = []         # initializate storing array
+
         epoch += 1
+        fname = self.filepath+'%s_ep-%d.txt'
 
         if(epoch % self.save_freq == 0): 
             for mname in logs:
