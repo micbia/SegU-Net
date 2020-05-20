@@ -28,8 +28,8 @@ def get_data(path, img_shape):
     Y = np.zeros(np.append(size, img_shape), dtype=np.float32)
     
     for i in tqdm(range(size)):
-        X[i] = read_cbin(path+'images_21cm_i%d.bin' %i)
-        Y[i] = read_cbin(path+'masks_21cm_i%d.bin' %i)
+        X[i] = read_cbin(filename=path+'images_21cm_i%d.bin' %i, dimensions=len(img_shape))
+        Y[i] = read_cbin(filename=path+'masks_21cm_i%d.bin' %i, dimensions=len(img_shape))
     
     X = X[..., np.newaxis]
     Y = Y[..., np.newaxis]

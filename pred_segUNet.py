@@ -39,7 +39,6 @@ PATH_OUT = conf.path_out
 IDX = conf.indexes
 
 # Load data
-
 print('Load dataset ...') 
 # get parameters of dataset
 idxs, redshift, eff_fact, Rmfp, Tvir, xn = np.loadtxt(PATH_PRED+'astro_params.txt', unpack=True)

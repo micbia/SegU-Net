@@ -54,7 +54,7 @@ if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
     RESUME_LR = np.loadtxt(glob(RESUME_PATH+'outputs/lr_ep-*.txt')[0])[RESUME_EPOCH-1]
 else:
     RESUME_MODEL = './dummy'
-    PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]
+    PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
     os.makedirs(PATH_OUT)
     os.makedirs(PATH_OUT+'/outputs')
     os.makedirs(PATH_OUT+'/source')
@@ -118,8 +118,13 @@ else:
         model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
     else:
         print('\nModel on GPU\n')
-        tf.distribute.MirroredStrategy(devices=["/xla_gpu:0", "/xla_gpu:1"])
+        #os.environ["CUDA_VISIBLE_DEVICES"]="0"
+        #config = tf.ConfigProto(device_count={'/device:XLA_GPU':2 , '/device:CPU': 1} ) 
+        #devices = ['/device:CPU:0', '/device:XLA_GPU:0']
 
+        #sess = tf.Session(config=config) 
+        #K.set_session(sess)
+        
         with tf.device("/cpu:0"):
             model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         model = multi_gpu_model(model, gpus=GPU)
@@ -149,7 +154,7 @@ else:
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
         valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
-    elif(len(IM_SHAPE) == 2):z
+    elif(len(IM_SHAPE) == 2):
         train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE, flip_axis='random', shuffle=True)
         valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE, flip_axis='random', shuffle=True)
 

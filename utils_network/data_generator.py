@@ -119,7 +119,7 @@ class DataGenerator(Sequence):
             ax_tup = (0, 1)
         else:
             raise ValueError('rotate axis should be 1, 2 or 3')
-        print(rotation, rotaxis)
+        #print(rotation, rotaxis)
         return np.rot90(data, k=rotation, axes=ax_tup)
 
 
