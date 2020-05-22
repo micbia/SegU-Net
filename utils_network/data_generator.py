@@ -11,7 +11,7 @@ class DataGenerator(Sequence):
     Note:
         At the moment only one type of augmentation can be applied for one generator.
     """
-    def __init__(self, data=None, label=None, batch_size=None, flip_axis=None, 
+    def __init__(self, data=None, label=None, batch_size=None, 
                  rotate_axis=None, rotate_angle=None, shuffle=True):
         """
         Arguments:
@@ -24,17 +24,14 @@ class DataGenerator(Sequence):
          rotate_angle: int or 'random'
                 Angle by which data is rotated along the specified axis.
         """
-        self.data = data
-        self.label = label
+        self.data = data[...,0]
+        self.label = label[...,0]
         self.batch_size = batch_size
-        
-        self.flip_axis = flip_axis
         self.rotate_axis = rotate_axis
         self.rotate_angle = rotate_angle
         self.shuffle = shuffle
-
-        self.data_shape = data.shape[1:]
-        self.data_size = data.shape[0]
+        self.data_shape = self.data.shape[1:]
+        self.data_size = self.data.shape[0]
         self.on_epoch_end()
 
         self.idx_list = np.array(range(self.data_size))
@@ -43,14 +40,6 @@ class DataGenerator(Sequence):
             self.exist_label = True
         else:
             self.exist_label = False
-
-        self.callback = None
-        if(self.rotate_axis is not None) and (self.rotate_angle is not None):
-            self.callback = self._rotate_data
-        elif(self.flip_axis is not None):
-            self.callback = self._flip_data
-        else:
-            raise ValueError('No action chosen.')
         
 
     def __len__(self):
@@ -69,58 +58,50 @@ class DataGenerator(Sequence):
     def __getitem__(self, index):
         indexes = self.idx_list[index*self.batch_size:(index+1)*self.batch_size]
 
-        X = np.array([self.callback(self.data[idx].squeeze()) for idx in indexes])
-        X = X[..., np.newaxis]
-        
-        y = np.array([self.callback(self.label[idx].squeeze()) for idx in indexes])
-        y = y[..., np.newaxis]
-        return X, y
-
-
-
-    def _flip_data(self, data):
-        """flip 2D array along specified axis (x or y)"""
-        if(self.flip_axis in (0, 1, 2)):
-            pass
-        elif(self.flip_axis == 'random'):
-            self.flip_axis = random.randint(0, 2)
-        else:
-            raise ValueError('Flip axis should be 0, 1, 2 or random')
-
-        if(self.flip_axis == 0):
-            flip_data = data
-        else:
-            flip_data = np.flip(data, self.flip_axis)
-
-        return flip_data
-
-
-    def _rotate_data(self, data):
-        """rotate array by specified range along specified axis(x, y or z)"""
+        # Specify axis of rotation (x, y or z)
         if self.rotate_axis in (1, 2, 3):
-            pass
+            rot_axis = [self.rotate_axis]*self.batch_size
         elif self.rotate_axis == 'random':
-            rotaxis = random.randint(1, 3)
+            rot_axis = [random.randint(1, 3) for i in range(self.batch_size)]
         else:
             raise ValueError('Rotate axis should be 1, 2, 3 or random')
         
+        # Specify angle of rotation (90, 180, 270, 360 degree)
         if isinstance(type(self.rotate_angle), (int, float)):
-            pass
+            rotation = [self.rotate_angle]*self.batch_size
         elif(self.rotate_angle == 'random'):
-            rotation = int(random.choice([90, 180, 270, 360]) / 90)
+            rotation = [random.choice([90, 180, 270, 360])//90 for i in range(self.batch_size)]
         else:
             raise ValueError('Rotate angle should be 90, 180, 270, 360 or random')
         
-        if rotaxis == 1:
-            ax_tup = (1, 2)
-        elif rotaxis == 2:
-            ax_tup = (2, 0)
-        elif rotaxis == 3:
-            ax_tup = (0, 1)
-        else:
-            raise ValueError('rotate axis should be 1, 2 or 3')
-        #print(rotation, rotaxis)
-        return np.rot90(data, k=rotation, axes=ax_tup)
+        X = np.zeros((np.append(self.batch_size, self.data_shape)))
+        y = np.zeros((np.append(self.batch_size, self.data_shape)))
+
+        for i, idx in enumerate(indexes):
+            X[i] = self._rotate_data(self.data[idx], rot=rotation[i], rotax=rot_axis[i])
+            y[i] = self._rotate_data(self.label[idx], rot=rotation[i], rotax=rot_axis[i])
+
+        X = X[..., np.newaxis]
+        y = y[..., np.newaxis]
+        
+        return X, y
+
+
+    def _rotate_data(self, data, rot, rotax):
+        if(len(self.data_shape) == 3):
+            if rotax == 1:
+                ax_tup = (1, 2)
+            elif rotax == 2:
+                ax_tup = (2, 0)
+            elif rotax == 3:
+                ax_tup = (0, 1)
+            else:
+                raise ValueError('rotate axis should be 1, 2 or 3')
+            rotated_data = np.rot90(data, k=rot, axes=ax_tup)
+        elif(len(self.data_shape) == 2):
+            rotated_data = np.rot90(data, k=rot)
+        
+        return rotated_data
 
 
 

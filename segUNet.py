@@ -1,6 +1,7 @@
 import os, random, numpy as np, sys
 import tensorflow as tf
 
+#from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 from glob import glob
@@ -8,11 +9,12 @@ from glob import glob
 from keras.callbacks import EarlyStopping
 from keras.optimizers import Adam
 from keras.models import load_model
-from keras.backend import set_value
+#from keras.backend import set_value
 from sklearn.metrics import matthews_corrcoef
 from keras import backend as K
 from keras.utils import multi_gpu_model
 
+from tensorflow import keras as K
 from config.net_config import NetworkConfig
 from utils_network.networks import Unet
 from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss
@@ -54,7 +56,12 @@ if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
     RESUME_LR = np.loadtxt(glob(RESUME_PATH+'outputs/lr_ep-*.txt')[0])[RESUME_EPOCH-1]
 else:
     RESUME_MODEL = './dummy'
-    PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
+    if(len(IM_SHAPE) == 3):
+        PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
+    elif(len(IM_SHAPE) == 2):
+        PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
+    else:
+        print('!!! Wrong data dimension !!!')
     os.makedirs(PATH_OUT)
     os.makedirs(PATH_OUT+'/outputs')
     os.makedirs(PATH_OUT+'/source')
@@ -81,7 +88,7 @@ else:
     print('Load dataset ...') 
     X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE)
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
-
+    size_train_dataset = X_train.shape[0]
 
 # Define model or load model
 if(os.path.exists(RESUME_MODEL)):
@@ -109,7 +116,7 @@ if(os.path.exists(RESUME_MODEL)):
         print(msg)
         print("Resume Learning rate: %.3e\n" %(K.get_value(model.optimizer.lr)))
     else:
-        K.set_value(model.optimizer.lr, RESUME_LR)       # change learning rate
+        tf.keras.backend.set_value(model.optimizer.lr, RESUME_LR)       # change learning rate
         resume_loss = np.loadtxt(glob(RESUME_PATH+'outputs/val_loss_ep-*.txt')[0])[BEST_EPOCH-1]
         print('\nScore resumed model:\n loss: %.3f' %resume_loss)
 else: 
@@ -118,13 +125,9 @@ else:
         model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
     else:
         print('\nModel on GPU\n')
-        #os.environ["CUDA_VISIBLE_DEVICES"]="0"
-        #config = tf.ConfigProto(device_count={'/device:XLA_GPU':2 , '/device:CPU': 1} ) 
-        #devices = ['/device:CPU:0', '/device:XLA_GPU:0']
-
-        #sess = tf.Session(config=config) 
-        #K.set_session(sess)
-        
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        session = tf.Session(config=config)
         with tf.device("/cpu:0"):
             model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         model = multi_gpu_model(model, gpus=GPU)
@@ -149,14 +152,10 @@ if not (DATA_AUGMENTATION):
                         shuffle=True)
 else:
     print('\nData augmentation: random rotation of 90, 180, 270 or 360 deg for x,y or z-axis...\n')
-    if(len(IM_SHAPE) == 3):
-        train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
-                                        rotate_axis='random', rotate_angle='random', shuffle=True)
-        valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
-                                        rotate_axis='random', rotate_angle='random', shuffle=True)
-    elif(len(IM_SHAPE) == 2):
-        train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE, flip_axis='random', shuffle=True)
-        valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE, flip_axis='random', shuffle=True)
+    train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
+                                    rotate_axis='random', rotate_angle='random', shuffle=True)
+    valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
+                                    rotate_axis='random', rotate_angle='random', shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),
