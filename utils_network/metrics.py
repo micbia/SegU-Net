@@ -36,3 +36,7 @@ def dice_coef_loss(y_true, y_pred):
     return 1-dice_coef(y_true, y_pred)
 
 
+def phi_coef(ytrue, ypred):
+    ypred_K = K.variable(np.array(ypred), dtype='float32')
+    ytrue_K = K.variable(np.array(ytrue), dtype='float32')
+    return K.eval(matthews_correlation(ytrue_K, ypred_K))

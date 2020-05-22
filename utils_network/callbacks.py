@@ -38,7 +38,7 @@ class HistoryCheckpoint(Callback):
         if(epoch % self.save_freq == 0): 
             for mname in logs:
                 self.stor_arr[mname] = np.append(self.stor_arr[mname], logs[mname])
-                if(self.in_epoch == 0):
+                if(self.in_epoch == 0 and self.count == 0):
                     np.savetxt(fname %(mname, epoch), self.stor_arr[mname])
                 elif(self.in_epoch != 0 and self.count == 0):
                     os.remove(fname %(mname, self.prev_epoch))                  # delete old save
@@ -48,7 +48,7 @@ class HistoryCheckpoint(Callback):
                     os.remove(fname %(mname, self.prev_epoch))                  # delete old save
                     chekp_arr = np.append(chekp_arr, self.stor_arr[mname])      # update 
                     np.savetxt(fname %(mname, epoch), chekp_arr)                # save
-                                        
+            
             self.count += 1
             self.prev_epoch = epoch
             for mname in logs:
