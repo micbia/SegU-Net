@@ -9,15 +9,12 @@ from glob import glob
 from keras.callbacks import EarlyStopping
 from keras.optimizers import Adam
 from keras.models import load_model
-#from keras.backend import set_value
 from sklearn.metrics import matthews_corrcoef
-from keras import backend as K
 from keras.utils import multi_gpu_model
 
-from tensorflow import keras as K
 from config.net_config import NetworkConfig
 from utils_network.networks import Unet
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss
+from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
 from utils_network.data_generator import DataGenerator
 from utils.other_utils import get_data, save_cbin
@@ -29,6 +26,8 @@ print('  _____              _    _ _   _      _   \n / ____|            | |  | |
 config_file = sys.argv[1]
 conf = NetworkConfig(config_file)
 
+avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy'}                                                                                  
+
 # --------------------- NETWORK & RESUME OPTIONS ---------------------
 RANDOM_SEED = 2020
 BATCH_SIZE = conf.batch_size
@@ -38,9 +37,9 @@ COARSE_DIM = conf.chansize
 DROPOUT = conf.dropout
 KS = conf.kernel_size
 EPOCHS = conf.epochs
-LOSS = conf.loss
+LOSS = avail_metrics[conf.loss]
 OPTIMIZER = Adam(lr=conf.learn_rate)
-METRICS = [iou, dice_coef, 'binary_accuracy']
+METRICS = [avail_metrics[m] for m in conf.metrics]
 RECOMPILE = conf.recomplile
 GPU = conf.gpus
 PATH_TRAIN = conf.path
@@ -79,14 +78,14 @@ os.system('cp -r config %s/source' %PATH_OUT)
 # Load data
 if isinstance(PATH_TRAIN, (list, np.ndarray)):
     print('Load images ...') 
-    X_train, y_train = get_data(PATH_TRAIN[0]+'data/', IM_SHAPE)
+    X_train, y_train = get_data(PATH_TRAIN[0]+'data/', IM_SHAPE, shuffle=True)
     size_train_dataset = X_train.shape[0]
     print('Load masks ...') 
-    X_valid, y_valid = get_data(PATH_TRAIN[1]+'data/', IM_SHAPE)
+    X_valid, y_valid = get_data(PATH_TRAIN[1]+'data/', IM_SHAPE, shuffle=True)
     size_valid_dataset = X_valid.shape[0]
 else:
     print('Load dataset ...') 
-    X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE)
+    X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
     size_train_dataset = X_train.shape[0]
 
@@ -100,7 +99,7 @@ if(os.path.exists(RESUME_MODEL)):
         model = load_model(RESUME_MODEL)
     except:
         cb = {} 
-        for func in METRICS: 
+        for func in [iou, dice_coef, 'binary_accuracy']: 
              if not isinstance(func, str): 
                 cb[func.__name__] = func 
 
@@ -114,7 +113,7 @@ if(os.path.exists(RESUME_MODEL)):
         for i, res_val in enumerate(resume_metrics):
             msg += ' %s: %.3f   ' %(model.metrics_names[i], res_val) 
         print(msg)
-        print("Resume Learning rate: %.3e\n" %(K.get_value(model.optimizer.lr)))
+        print("Resume Learning rate: %.3e\n" %(tf.keras.backend.get_value(model.optimizer.lr)))
     else:
         tf.keras.backend.set_value(model.optimizer.lr, RESUME_LR)       # change learning rate
         resume_loss = np.loadtxt(glob(RESUME_PATH+'outputs/val_loss_ep-*.txt')[0])[BEST_EPOCH-1]
@@ -136,7 +135,7 @@ else:
     model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
 
-callbacks = [EarlyStopping(patience=20, verbose=1),
+callbacks = [EarlyStopping(patience=21, verbose=1),
              ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH), best=resume_loss),
              SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=resume_loss),
              HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]

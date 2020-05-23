@@ -21,7 +21,7 @@ def RescaleData(arr, a=-1, b=1):
 
 
 # Get train images and masks
-def get_data(path, img_shape):
+def get_data(path, img_shape, shuffle=False):
     size = len(glob(path+'images*'))
     
     X = np.zeros(np.append(size, img_shape), dtype=np.float32)
@@ -36,6 +36,13 @@ def get_data(path, img_shape):
 
     X = RescaleData(arr=X, a=0, b=1)
     Y = RescaleData(arr=Y, a=0, b=1)
+
+    if(shuffle):
+        idxs = np.array(range(size))
+        np.random.shuffle(idxs)
+
+        X = X[idxs]
+        y = y[idxs]
 
     return X, Y
 

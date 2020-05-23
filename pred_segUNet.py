@@ -5,8 +5,6 @@ matplotlib.use('agg')
 import tools21cm as t2c
 
 from matplotlib import gridspec
-from sklearn.model_selection import train_test_split
-from datetime import datetime
 from tqdm import tqdm
 
 from keras.optimizers import Adam

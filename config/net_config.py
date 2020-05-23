@@ -23,6 +23,10 @@ class NetworkConfig:
         self.kernel_size    = eval(trainconfig['KERNEL_SIZE'])
         self.epochs         = eval(trainconfig['EPOCHS'])
         self.loss           = trainconfig['LOSS']
+        if(', ' in trainconfig['METRICS']):
+            self.metrics    = trainconfig['METRICS'].split(', ')
+        else:
+            self.metrics    = trainconfig['METRICS']
         self.learn_rate     = eval(trainconfig['LR'])
         self.recomplile     = eval(trainconfig['RECOMP'])
         self.gpus           = eval(trainconfig['GPUS'])
