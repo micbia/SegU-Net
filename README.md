@@ -1,5 +1,5 @@
 # SegU-Net
-Segmentation 3D Convolutional U-Network for Identification of HI regions during Reionization in 21-cm Tomography Observations
+Segmentation 3D Convolutional U-Network for Identification of HI regions during the Cosmic Epoch of Reionization in 21-cm Tomography Observations
 
 
 <img src="https://github.com/micbia/SegU-Net/blob/master/utils_plot/Unet_model.png"> 
