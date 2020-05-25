@@ -17,10 +17,12 @@ os.chdir(path)
 
 # Load Data
 loss, val_loss = np.loadtxt('loss_ep-%d.txt' %epoch), np.loadtxt('val_loss_ep-%d.txt' %epoch) 
-mse, val_mse = np.loadtxt('mean_squared_error_ep-%d.txt' %epoch), np.loadtxt('val_mean_squared_error_ep-%d.txt' %epoch) 
+#mse, val_mse = np.loadtxt('mean_squared_error_ep-%d.txt' %epoch), np.loadtxt('val_mean_squared_error_ep-%d.txt' %epoch) 
 
 dice_coef, val_dice_coef = np.loadtxt('dice_coef_ep-%d.txt' %epoch), np.loadtxt('val_dice_coef_ep-%d.txt' %epoch) 
 bin_acc, val_bin_acc = np.loadtxt('binary_accuracy_ep-%d.txt' %epoch), np.loadtxt('val_binary_accuracy_ep-%d.txt' %epoch) 
+
+iou, val_iou = np.loadtxt('iou_ep-%d.txt' %epoch), np.loadtxt('val_iou_ep-%d.txt' %epoch) 
 
 lr = np.loadtxt('lr_ep-%d.txt' %epoch) 
 
@@ -49,11 +51,13 @@ ax1.legend(lns+lns2, labs+labs2, loc=1)
 ax2 = plt.subplot(1,2,2) 
 ax2.set_ylabel('Accuracy'), ax2.set_xlabel('Epoch') 
 #ax2.scatter(idx_best_mode, val_dice_coef[idx_best_mode], marker="x", color="r", label="Best Model")
-#ax2.plot(val_dice_coef, color='lightgreen', label='Validation Dice Coefficien') 
-#ax2.plot(dice_coef, color='forestgreen', label='Training Dice Coefficien')
+ax2.plot(val_dice_coef, color='lightgreen', label='Validation Dice Coefficien') 
+ax2.plot(dice_coef, color='forestgreen', label='Training Dice Coefficien')
 ax2.scatter(idx_best_mode, val_bin_acc[idx_best_mode], marker="x", color="r", label="Best Model")
 ax2.plot(val_bin_acc, color='violet', label='Validation Binary Accuracy') 
 ax2.plot(bin_acc, color='purple', label='Training Binary Accuracy')
+ax2.plot(val_iou, color='orange', label='Validation IoU') 
+ax2.plot(iou, color='darkorange', label='Training IoU')
 ax2.set_xlim(-1,loss.size) 
 
 """

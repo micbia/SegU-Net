@@ -1,5 +1,36 @@
 from keras import backend as K
 import numpy as np
+import tensorflow as tf
+
+
+def balanced_cross_entropy(y_true, y_pred):
+    """
+    To decrease the number of false negatives, set beta>1. To decrease the number of false positives, set beta<1.
+    """
+    beta = tf.reduce_mean(1 - y_true)
+    #beta = tf.reduce_sum(1 - y_true) / (BATCH_SIZE * HEIGHT * WIDTH)
+
+    y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
+    y_pred = tf.log(y_pred / (1 - y_pred))
+    pos_weight = beta / (1 - beta + tf.keras.backend.epsilon())
+    loss = tf.nn.weighted_cross_entropy_with_logits(logits=y_pred, targets=y_true, pos_weight=pos_weight)
+
+    return tf.reduce_mean(loss * (1 - beta))
+
+
+def tversky_loss(y_true, y_pred, beta=0.7):
+    """
+    Generalization of Dice’s coefficient. It adds a weight to FP (false positives) and FN (false negatives).
+    For example for beta=0.5 we obtain the regular dice coefficient (see: https://arxiv.org/abs/1706.05721)
+    """
+    numerator = tf.reduce_sum(y_true * y_pred, axis=-1)
+    denominator = y_true * y_pred + beta * (1 - y_true) * y_pred + (1 - beta) * y_true * (1 - y_pred)
+
+    loss = 1 - (numerator + 1) / (tf.reduce_sum(denominator, axis=-1) + 1)
+
+    return loss
+
+
 
 def iou(y_true, y_pred):
     """

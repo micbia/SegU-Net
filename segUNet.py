@@ -14,7 +14,7 @@ from keras.utils import multi_gpu_model
 
 from config.net_config import NetworkConfig
 from utils_network.networks import Unet
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef
+from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
 from utils_network.data_generator import DataGenerator
 from utils.other_utils import get_data, save_cbin
@@ -26,7 +26,7 @@ print('  _____              _    _ _   _      _   \n / ____|            | |  | |
 config_file = sys.argv[1]
 conf = NetworkConfig(config_file)
 
-avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy'}                                                                                  
+avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy}                                                                                  
 
 # --------------------- NETWORK & RESUME OPTIONS ---------------------
 RANDOM_SEED = 2020

@@ -42,7 +42,7 @@ def get_data(path, img_shape, shuffle=False):
         np.random.shuffle(idxs)
 
         X = X[idxs]
-        y = y[idxs]
+        Y = Y[idxs]
 
     return X, Y
 
