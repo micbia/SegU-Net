@@ -1,6 +1,9 @@
 # SegU-Net
 Segmentation 3D Convolutional U-Network for Identification of HI regions during Reionization in 21-cm Tomography Observations
 
+
+<img src="https://github.com/micbia/SegU-Net/blob/master/utils_plot/Unet_model.png"> 
+
 <b>Seg U-Net Training Utilization:</b></br>
 to train the network on data at you disposal you can change the directory path variable <i>PATH</i> in the initial condition files <i>net.ini</i>, as well as other hypeparameters. The actual data should be stored at this location in a sub-directory called <i>data/</i>.
 </br>Then run the following command:</br>
