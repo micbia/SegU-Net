@@ -128,4 +128,3 @@ class TTA_ModelWrapper():
     
     def _expand(self, x):
         return np.expand_dims(np.expand_dims(x, axis=0), axis=3)
-

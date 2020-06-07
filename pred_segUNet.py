@@ -12,12 +12,13 @@ from keras.models import load_model
 
 from config.net_config import PredictionConfig
 from utils_network.networks import Unet
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss
+from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, balanced_cross_entropy, phi_coef
 from utils_network.data_generator import TTA_ModelWrapper
 from utils.other_utils import get_data, save_cbin
 from utils_plot.plotting import plot_sample, plot_sample3D, plot_phicoef
 from utils_network.data_generator import DataGenerator
 
+avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy}                                                                                  
 
 title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | |  \| | ___| |_ \n\t\t| |  | | . ` |/ _ \ __|\n\t\t| |__| | |\  |  __/ |_ \n\t\t \____/|_| \_|\___|\__|\n'
 title_b = ' _____              _ _      _         ___  __                \n|  __ \            | (_)    | |       |__ \/_ |               \n| |__) | __ ___  __| |_  ___| |_ ___     ) || | ___ _ __ ___  \n|  ___/ `__/ _ \/ _` | |/ __| __/ __|   / / | |/ __| `_ ` _ \ \n| |   | | |  __/ (_| | | (__| |_\__ \  / /_ | | (__| | | | | |\n|_|   |_|  \___|\__,_|_|\___|\__|___/ |____||_|\___|_| |_| |_|\n'
@@ -28,7 +29,7 @@ conf = PredictionConfig(config_file)
 
 MODEL_EPOCH = conf.model_epoch
 IM_SHAPE = conf.img_shape
-METRICS = [iou, dice_coef, 'binary_accuracy']
+METRICS = [avail_metrics[m] for m in conf.metrics]
 TTA_WRAP = conf.tta_wrap
 AUGMENTATION = conf.augmentation
 EVAL = conf.val

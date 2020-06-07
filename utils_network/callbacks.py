@@ -28,10 +28,6 @@ class HistoryCheckpoint(Callback):
             self.prev_epoch = int(metric[metric.rfind('-')+1: metric.find('.txt')])
 
     def on_epoch_end(self, epoch, logs=None):
-        if(epoch == self.in_epoch): 
-            for mname in logs:
-                self.stor_arr[mname] = []         # initializate storing array
-
         epoch += 1
         fname = self.filepath+'%s_ep-%d.txt'
 
@@ -41,8 +37,8 @@ class HistoryCheckpoint(Callback):
                 if(self.in_epoch == 0 and self.count == 0):
                     np.savetxt(fname %(mname, epoch), self.stor_arr[mname])
                 elif(self.in_epoch != 0 and self.count == 0):
-                    os.remove(fname %(mname, self.prev_epoch))                  # delete old save
                     np.savetxt(fname %(mname, epoch), self.stor_arr[mname])     # save
+                    os.remove(fname %(mname, self.prev_epoch))                  # delete old save
                 else:
                     chekp_arr = np.loadtxt(fname %(mname, self.prev_epoch))     # load previous save
                     os.remove(fname %(mname, self.prev_epoch))                  # delete old save

@@ -3,19 +3,37 @@ import numpy as np
 import tensorflow as tf
 
 
+from tensorflow.python.ops import nn_ops
+from tensorflow.python.framework import ops 
+from tensorflow.python.ops import array_ops 
+from tensorflow.python.ops import math_ops 
+
+def sigmoid_balanced_cross_entropy_with_logits(_sentinel=None, labels=None, logits=None, beta=None, name=None):
+    nn_ops._ensure_xent_args("sigmoid_cross_entropy_with_logits", _sentinel,labels, logits)
+    with ops.name_scope(name, "logistic_loss", [logits, labels]) as name: 
+        logits = ops.convert_to_tensor(logits, name="logits") 
+        labels = ops.convert_to_tensor(labels, name="labels") 
+        try:
+            labels.get_shape().merge_with(logits.get_shape())
+        except ValueError:
+            raise ValueError("logits and labels must have the same shape (%s vs %s)" %(logits.get_shape(), labels.get_shape())) 
+        zeros = array_ops.zeros_like(logits, dtype=logits.dtype) 
+        cond = (logits >= zeros) 
+        relu_logits = array_ops.where(cond, logits, zeros) 
+        neg_abs_logits = array_ops.where(cond, -logits, logits) 
+        beta=0.5
+        balanced_cross_entropy = relu_logits*(1.-beta)-logits*labels*(1.-beta)+math_ops.log1p(math_ops.exp(neg_abs_logits))*((1.-beta)*(1.-labels)+beta*labels)
+        return tf.reduce_mean(balanced_cross_entropy)
+
+
 def balanced_cross_entropy(y_true, y_pred):
     """
     To decrease the number of false negatives, set beta>1. To decrease the number of false positives, set beta<1.
     """
-    beta = tf.reduce_mean(1 - y_true)
-    #beta = tf.reduce_sum(1 - y_true) / (BATCH_SIZE * HEIGHT * WIDTH)
-
+    beta = tf.maximum(tf.reduce_mean(1 - y_true), tf.keras.backend.epsilon())
     y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
-    y_pred = tf.log(y_pred / (1 - y_pred))
-    pos_weight = beta / (1 - beta + tf.keras.backend.epsilon())
-    loss = tf.nn.weighted_cross_entropy_with_logits(logits=y_pred, targets=y_true, pos_weight=pos_weight)
-
-    return tf.reduce_mean(loss * (1 - beta))
+    y_pred = K.log(y_pred / (1 - y_pred))
+    return sigmoid_balanced_cross_entropy_with_logits(logits=y_pred, labels=y_true, beta=beta)
 
 
 def tversky_loss(y_true, y_pred, beta=0.7):
@@ -71,3 +89,10 @@ def phi_coef(ytrue, ypred):
     ypred_K = K.variable(np.array(ypred), dtype='float32')
     ytrue_K = K.variable(np.array(ytrue), dtype='float32')
     return K.eval(matthews_correlation(ytrue_K, ypred_K))
+
+
+def focal_loss(y_true, y_pred):
+    gamma, alpha = 2.0, 0.25
+    pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+    pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+    return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1))-K.sum((1-alpha) * K.pow( pt_0, gamma) * K.log(1. - pt_0))
