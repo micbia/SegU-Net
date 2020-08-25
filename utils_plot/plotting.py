@@ -2,7 +2,8 @@ import matplotlib
 matplotlib.use('agg')
 import numpy as np, matplotlib.pyplot as plt
 
-from sklearn.metrics import matthews_corrcoef
+import sys
+sys.path.append("..")
 from tqdm import tqdm
 
 # Plots Predictions
@@ -53,12 +54,12 @@ def plot_loss(output, path='./'):
 
 # Plot matthews_corrcoef
 def plot_phicoef(true, predict, indexes, red, xfrac, path='./'):
-    phi_coef = np.zeros_like(indexes)
+    pcoef = np.zeros_like(indexes)
     for i in tqdm(range(indexes.size)):
-        phi_coef[i] = matthews_corrcoef(true[i].flatten(), predict[i].flatten().round())
-    np.savetxt(path+'phi_coef.txt', np.array([indexes, red, xfrac, phi_coef]).T, fmt='%d\t%.3f\t%.3f\t%.3f', header='z\tx_n\tphi_coef')
+        pcoef[i] = matthews_corrcoef(true[i].flatten(), predict[i].flatten().round())
+    np.savetxt(path+'phi_coef.txt', np.array([indexes, red, xfrac, pcoef]).T, fmt='%d\t%.3f\t%.3f\t%.3f', header='z\tx_n\tphi_coef')
     fig = plt.figure(figsize=(12, 12))
-    plt.plot(xfrac, phi_coef, 'r.')
+    plt.plot(xfrac, pcoef, 'r.')
     plt.xlabel('$x_n$'), plt.ylabel('$r_{\phi}$')
     plt.savefig(path+'phi_coef.png', bbox_inches='tight')
     plt.close('all')

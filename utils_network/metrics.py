@@ -1,7 +1,7 @@
 from keras import backend as K
 import numpy as np
 import tensorflow as tf
-
+import numba
 
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.framework import ops 
@@ -84,11 +84,23 @@ def dice_coef(y_true, y_pred, smooth=1):
 def dice_coef_loss(y_true, y_pred):
     return 1-dice_coef(y_true, y_pred)
 
+@numba.jit
+def phi_coef(ytrue, ypred): 
+    ytrue, ypred = (ytrue.squeeze()).flatten(), (ypred.squeeze()).flatten()
 
-def phi_coef(ytrue, ypred):
-    ypred_K = K.variable(np.array(ypred), dtype='float32')
-    ytrue_K = K.variable(np.array(ytrue), dtype='float32')
-    return K.eval(matthews_correlation(ytrue_K, ypred_K))
+    TP, TN, FP, FN = 0, 0, 0, 0
+    for t, p in zip(ytrue, ypred.round()):
+        if(t == 1 and p == 1):
+            TP += 1  
+        elif(t == 0 and p == 0):
+            TN += 1  
+        elif(t == 0 and p == 1):
+            FP += 1
+        else:
+            FN += 1  
+    
+    mcc = (TP*TN-FP*FN)/np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)) 
+    return mcc
 
 
 def focal_loss(y_true, y_pred):

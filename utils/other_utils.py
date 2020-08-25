@@ -47,6 +47,40 @@ def get_data(path, img_shape, shuffle=False):
     return X, Y
 
 
+
+def get_batch(path, img_shape, shuffle=False, size=32):    
+    X = np.zeros(np.append(size, img_shape), dtype=np.float32)
+    Y = np.zeros(np.append(size, img_shape), dtype=np.float32)
+    
+    idx_list = np.array(range(size))
+    if shuffle == True:
+        np.random.shuffle(idx_list)
+    
+    for i in tqdm(range(size)):
+        X[i] = read_cbin(filename=path+'images_21cm_i%d.bin' %i, dimensions=len(img_shape))
+        Y[i] = read_cbin(filename=path+'masks_21cm_i%d.bin' %i, dimensions=len(img_shape))
+    
+    #import tarfile 
+    #tar = tarfile.open('data3D_128_020720.tar.gz') 
+    #tar.extract('dT1_21cm_i0.bin','./data') 
+    #tar.close()   
+
+    X = X[..., np.newaxis]
+    Y = Y[..., np.newaxis]
+
+    X = RescaleData(arr=X, a=0, b=1)
+    Y = RescaleData(arr=Y, a=0, b=1)
+
+    if(shuffle):
+        idxs = np.array(range(size))
+        np.random.shuffle(idxs)
+
+        X = X[idxs]
+        Y = Y[idxs]
+
+    return X, Y
+
+
 def get_subset3D(indexes, path, im_height, im_width, im_depth):
     batch_size = indexes.shape[0]
 

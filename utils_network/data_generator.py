@@ -1,10 +1,124 @@
-import math, random, numpy as np
+import math, random, numpy as np, os, tools21cm as t2c
 
+from datetime import datetime
 from keras.utils import Sequence
 from tqdm import tqdm
 
 
 class DataGenerator(Sequence):
+    """
+    Data generator of 3D data (calculate noise cube and smooth data).
+    """
+    def __init__(self, data=None, label=None, batch_size=None, 
+                 tobs=1000, path='./', shuffle=True):
+        """
+        Arguments:
+         tobs: int
+                observational time, for noise calcuation.
+        """
+        self.data = data[...,0]
+        self.label = label[...,0]
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.data_shape = self.data.shape[1:]
+        self.data_size = self.data.shape[0]
+        self.on_epoch_end()
+        self.idx_list = np.array(range(self.data_size))
+        self.path = path
+        
+        # i, z, eff_fact, Rmfp, Tvir, np.mean(xn)
+        self.astro_par = np.loadtxt(self.path+'astro_params.txt', unpack=True)
+        with open(self.path+'user_params.txt','r') as f:
+            self.user_par = eval(f.read())
+
+        assert self.user_par['HII_DIM'] = self.data_shape[0]
+
+        self.path_uvcov = '%s/../uv_coverage_%d/' %(self.path, self.user_par['HII_DIM'])
+
+        if tobs:
+            self.tobs = tobs
+        else:
+            raise ValueError('Set observation time: tobs')
+
+        if self.label is not None:
+            self.exist_label = True
+        else:
+            raise ValueError('Label data are not provided')
+        
+
+    def __len__(self):
+        # number of batches
+        return self.data_size//self.batch_size
+
+
+    def on_epoch_end(self):
+        # Updates indexes after each epoch
+        self.idx_list = np.array(range(self.data_size))
+        
+        if self.shuffle == True:
+            np.random.shuffle(self.idx_list)
+    
+
+    def __getitem__(self, index):
+        indexes = self.idx_list[index*self.batch_size:(index+1)*self.batch_size]
+        
+        X = np.zeros((np.append(self.batch_size, self.data_shape)))
+        y = np.zeros((np.append(self.batch_size, self.data_shape)))
+
+        for i, idx in enumerate(indexes):
+            X[i] = self._noise_smt_dT(dT1=self.data[idx], idx=idx)
+            y[i] = self._smt_xH(xH_box=self.label[idx], idx=idx)
+        
+        X = X[..., np.newaxis]
+        y = y[..., np.newaxis]
+        
+        return X, y
+
+
+    def _noise_smt_dT(self, dT1, idx):
+        assert idx == self.astro_par[0,idx]
+
+        # calculate uv-coverage 
+        file_uv = '%suvmap_z%.3f.npy' %(self.path_uvcov, z)
+        file_Nant = '%sNantmap_z%.3f.npy' %(self.path_uvcov, z)
+        
+        if(os.path.exists(file_uv) and os.path.exists(file_Nant)):
+                uv = np.load(file_uv)
+                Nant = np.load(file_Nant)
+        else:
+            #SKA-Low 2016 configuration
+            uv, Nant = t2c.get_uv_daily_observation(self.user_par['HII_DIM'], z, filename=None,
+                                                    total_int_time=6.0, int_time=10.0,
+                                                    boxsize=self.user_par['BOX_LEN'],
+                                                    declination=-30.0, verbose=False)
+            np.save(file_uv, uv)
+            np.save(file_Nant, Nant)
+
+        # calculate Noise cube
+        np.random.seed(datetime.now())
+        noise_cube = t2c.noise_cube_coeval(self.user_par['HII_DIM'], self.astro_par[1,idx], depth_mhz=None,
+                                        obs_time=self.tobs, filename=None, boxsize=self.user_par['BOX_LEN'],
+                                        total_int_time=6.0, int_time=10.0, declination=-30.0, 
+                                        uv_map=uv, N_ant=Nant, fft_wrap=False, verbose=False)
+
+        dT3 = t2c.smooth_coeval(dT1+noise_cube, self.astro_par[1,idx], 
+                                box_size_mpc=self.user_par['HII_DIM'],
+                                max_baseline=2.0, ratio=1.0, nu_axis=2)
+
+        return dT3
+
+
+    def _smt_xH(self, xH_box, idx):
+        assert idx == self.astro_par[0,idx]
+
+        smt_xn = t2c.smooth_coeval(xH_box, self.astro_par[1,idx], 
+                                    box_size_mpc=self.user_par['HII_DIM'],
+                                    max_baseline=2.0, ratio=1.0, nu_axis=2)
+        mask_xn = smt_xn>0.5
+
+        return mask_xn.astype(int)
+
+class RotateGenerator(Sequence):
     """
     Data generator of 3D data (only flip and rotate).
 

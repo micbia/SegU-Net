@@ -16,7 +16,7 @@ class NetworkConfig:
         
         trainconfig = config['TRAINING']
         self.batch_size     = eval(trainconfig['BATCH_SIZE'])
-        self.augment        = eval(trainconfig['AUGMENT'])
+        self.augment        = trainconfig['AUGMENT']
         self.img_shape      = tuple(np.array(eval(trainconfig['IMG_SHAPE']), dtype=int))
         self.chansize       = eval(trainconfig['CHAN_SIZE'])
         self.dropout        = eval(trainconfig['DROPOUT'])

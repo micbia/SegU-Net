@@ -16,7 +16,7 @@ from config.net_config import NetworkConfig
 from utils_network.networks import Unet
 from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
-from utils_network.data_generator import DataGenerator
+from utils_network.data_generator import RotateGenerator
 from utils.other_utils import get_data, save_cbin
 from utils_plot.plotting import plot_loss
 
@@ -152,11 +152,18 @@ if not (DATA_AUGMENTATION):
                         validation_data=(X_valid, y_valid), 
                         shuffle=True)
 else:
-    print('\nData augmentation: random rotation of 90, 180, 270 or 360 deg for x,y or z-axis...\n')
-    train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
-                                    rotate_axis='random', rotate_angle='random', shuffle=True)
-    valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
-                                    rotate_axis='random', rotate_angle='random', shuffle=True)
+    if(DATA_AUGMENTATION == 'ROT'):
+        print('\nData augmentation: random rotation of 90, 180, 270 or 360 deg for x,y or z-axis...\n')
+        train_generator = RotateGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
+                                        rotate_axis='random', rotate_angle='random', shuffle=True)
+        valid_generator = RotateGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
+                                        rotate_axis='random', rotate_angle='random', shuffle=True)
+    elif(DATA_AUGMENTATION == 'NOISESMT'):
+        print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
+        train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
+                                        tobs=1000, path=PATH_TRAIN, shuffle=True)
+        valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
+                                        tobs=1000, path=PATH_TRAIN, shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),

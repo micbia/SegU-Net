@@ -80,7 +80,7 @@ except:
     PATH_OUT += 'predictions/'
 
 
-# Get prediction and accuracy score
+print('\nGet prediction and accuracy score')
 if(TTA_WRAP):
     tta_model = TTA_ModelWrapper(model)
     predictions = tta_model.predict(X)
@@ -95,12 +95,21 @@ if(EVAL):
     print(msg+'\n')
 
 
-# Plot matthews_corrcoef
+print('\nPlot matthews_corrcoef')
 plot_phicoef(y, predictions, idxs, redshift, xn, path=PATH_OUT)
+
+# Get layers outputs
+layers_outputs = [layer.output for layer in model.layers]          # all layer outputs
+functors = [K.function([model.input, K.learning_phase()], [out]) for out in layers_outputs]    # evaluation functions
 
 
 for i in IDX:
     true, pred = y[i].squeeze(), predictions[i]
+
+    # get layers outputs
+    layer_outs = [func(y[i]) for func in functors]
+    print(layer_outs, type(layer_outs[0]))
+
     """
     mfp_pred = t2c.bubble_stats.mfp(pred, xth=0.5, boxsize=IM_SHAPE[0], iterations=2000000, verbose=False,
                                     upper_lim=False, bins=None, r_min=None, r_max=None)
