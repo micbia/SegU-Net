@@ -139,7 +139,7 @@ class ReduceLR(Callback):
 
 
 class SaveModelCheckpoint(Callback):
-    " Copied original code, added 'prev_best' to init parameters for resuming training"
+    " Copied original code, added variable 'best' to init parameters for resuming training"
     def __init__(self, filepath, monitor='val_loss', verbose=0,
                  save_best_only=False, save_weights_only=False,
                  mode='auto', period=1, best=None):
