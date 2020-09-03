@@ -95,7 +95,7 @@ class DataGenerator(Sequence):
             np.save(file_Nant, Nant)
 
         # calculate Noise cube
-        np.random.seed(datetime.now())
+        random.seed(datetime.now())
         noise_cube = t2c.noise_cube_coeval(self.user_par['HII_DIM'], self.astro_par[1,idx], depth_mhz=None,
                                         obs_time=self.tobs, filename=None, boxsize=self.user_par['BOX_LEN'],
                                         total_int_time=6.0, int_time=10.0, declination=-30.0, 
