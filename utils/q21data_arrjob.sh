@@ -14,6 +14,9 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=mb756@sussex.ac.uk
 
+#SBATCH --array=0-29
+#SBATCH --error=msg/data21cm-err%A.%j
+
 module load intel intelmpi
 module load profile/base autoload python/3.6.4
 module load profile/base autoload fftw
@@ -22,6 +25,7 @@ module load profile/base autoload gsl
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
 export OMP_PLACES=cores  # pinning threads correctly
 
+echo $SLURM_ARRAY_TASK_MAX
 #DIR='./new_start'
 DIR='/gpfs/scratch/userexternal/mbianco0/data3D_128_030920/'
 
@@ -35,4 +39,4 @@ else
     mkdir $DIR/parameters
 fi
 
-srun python create_data_21cmfast_mpi.py $DIR
+srun python create_data_21cmfast.py $DIR

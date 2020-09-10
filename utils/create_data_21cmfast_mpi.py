@@ -5,14 +5,15 @@ import tools21cm as t2c, py21cmfast as p21
 import matplotlib.gridspec as gridspec
 import random, json
 
-from datetime import datetime
+from datetime import datetime, date
 from glob import glob
 from tqdm import tqdm
 from mpi4py import MPI
 
-#path_out = '/gpfs/scratch/userexternal/mbianco0/data3D_128_080820/'
 path_out = sys.argv[1]
+arr_idx = int(sys.argv[2])
 path_out += '/' if path_out[-1]!='/' else ''
+
 path_chache = '/gpfs/scratch/userexternal/mbianco0/21cmFAST-cache/'
 p21.config['direc'] = path_chache
 
@@ -20,9 +21,24 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 nprocs = comm.Get_size()
 
-loop_end = 7000
-loop_start = 0
+#loop_start, loop_end = 6999, 7000
+loop_start, loop_end = np.loadtxt('parameters/todo_r%d.txt' %arr_idx, dtype=int)
 perrank = (loop_end-loop_start)//nprocs
+
+def get_dir_size(dir):
+    """Returns the "dir" size in bytes."""
+    total = 0
+    try:
+        for entry in os.scandir(dir):
+            if entry.is_file():
+                total += entry.stat().st_size
+            elif entry.is_dir():
+                total += get_dir_size(entry.path)
+    except NotAdirError:
+        return os.path.getsize(dir)
+    except PermissionError:
+        return 0
+    return total
 
 
 def GenerateSeed():
@@ -51,13 +67,19 @@ else:
 
 
 if(loop_resume == 0):
-    i = loop_start+rank*perrank
+    i = int(loop_start+rank*perrank)
 elif(loop_resume != 0):
-    print('Output path already exist.\nRank=%d resumes itration from i=%d.' %(rank, loop_resume))
-    i = loop_resume + 1
+    print(' Rank=%d resumes itration from i=%d.' %(rank, loop_resume))
+    i = int(loop_resume + 1)
 
+if(rank == nprocs-1):
+    i_end = int(loop_start+(rank+1)*perrank)
+else:
+    i_end = int(loop_start+(rank+1)*perrank)
+    if(i_end != loop_end):
+        i_end = loop_end
 
-while i < loop_start+(rank+1)*perrank:
+while i < i_end:
     # astronomical & cosmological parameters
     z = np.random.uniform(7, 9)         # z = [7, 9]
     eff_fact = random.gauss(52.5, 20.)  # eff_fact = [5, 100]
@@ -154,17 +176,24 @@ while i < loop_start+(rank+1)*perrank:
 
             f.write('%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\n' %(i, z, eff_fact, Rmfp, Tvir, np.mean(xn)))
         
-        # if output directory is more than 15 GB of size, compress and remove files in data/
-        if(os.path.getsize(path_out)/1e9 > 15):
+        # if output dir is more than 15 GB of size, compress and remove files in data/
+        if(get_dir_size(path_out) / 1e9 >= 15):
             if(rank == 0):
-                compr_dir = len(glob(path_out+'../*tar.gz'))
-                os.system('tar -czvf %s %s' %(path_out, path_out[path_out[:-1].rfind('/')+1:-1]))
-                os.system('rm %sdata/*.bin')
+                try:
+                    strd = np.loadtxt(path_out+'written.txt', dtype=str, delimiter='\n')
+                except:
+                    strd = np.array([])
+
+                os.system('tar -czvf %s_part%d.tar.gz %s' %(path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1, path_out[path_out[:-1].rfind('/')+1:-1]))
+                os.system('rm %sdata/*.bin' %path_out)
+
+                np.savetxt(path_out+'written.txt', np.append(strd, ['%s written %s_part%d.tar.gz' %(datetime.now().strftime('%d/%m/%Y %H:%M:%S'), path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1)]), delimiter='\n', fmt='%s')
+            print(' \n Data created exeed 15GB. Compression completed...')
             comm.Barrier()
 
         # update while loop index
         i += 1
     else:
         continue
-    
-print('...Finished')
+comm.Barrier() 
+print('... rank=%d finished' %rank)
