@@ -19,7 +19,6 @@ class DataGenerator(Sequence):
         """
         self.path = path
         self.indexes = data_temp
-        print(data_temp)
         self.batch_size = batch_size
         self.data_shape = data_shape
         self.shuffle = shuffle
@@ -62,7 +61,6 @@ class DataGenerator(Sequence):
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
 
         for i, idx in enumerate(indexes):
-            print(idx)
             if(self.zipf):
                 for var in glob('%s*part*.zip' %self.path):
                     try:

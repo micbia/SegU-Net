@@ -16,7 +16,7 @@ from config.net_config import NetworkConfig
 from utils_network.networks import Unet
 from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
-from utils_network.data_generator import RotateGenerator
+from utils_network.data_generator import RotateGenerator, DataGenerator
 from utils.other_utils import get_data, save_cbin
 from utils_plot.plotting import plot_loss
 
@@ -93,7 +93,8 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
 else:
     print('Data will ber extracted in batches...')
     test_size, datasize = 0.15, 10000 
-    train_idx = np.arange(0, datasize*(1-test_size), dtype=int) 
+    train_idx = np.arange(0, datasize*(1-test_size), dtype=int)
+    size_train_dataset = train_idx.size
     test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)     
 
 # Define model or load model
@@ -166,9 +167,9 @@ else:
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
-        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=True
+        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=True,
                                         batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True
+        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True,
                                         batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
