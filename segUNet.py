@@ -77,18 +77,21 @@ os.system('cp -r config %s/source' %PATH_OUT)
 os.system('cp %s %s' %(config_file, PATH_OUT))
 
 # Load data
-if isinstance(PATH_TRAIN, (list, np.ndarray)):
-    print('Load images ...') 
-    X_train, y_train = get_data(PATH_TRAIN[0]+'data/', IM_SHAPE, shuffle=True)
-    size_train_dataset = X_train.shape[0]
-    print('Load masks ...') 
-    X_valid, y_valid = get_data(PATH_TRAIN[1]+'data/', IM_SHAPE, shuffle=True)
-    size_valid_dataset = X_valid.shape[0]
+if(DATA_AUGMENTATION != 'NOISESMT'):
+    if isinstance(PATH_TRAIN, (list, np.ndarray)):
+        print('Load images ...') 
+        X_train, y_train = get_data(PATH_TRAIN[0]+'data/', IM_SHAPE, shuffle=True)
+        size_train_dataset = X_train.shape[0]
+        print('Load masks ...') 
+        X_valid, y_valid = get_data(PATH_TRAIN[1]+'data/', IM_SHAPE, shuffle=True)
+        size_valid_dataset = X_valid.shape[0]
+    else:
+        print('Load dataset ...') 
+        X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
+        size_train_dataset = X_train.shape[0]
 else:
-    print('Load dataset ...') 
-    X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
-    X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
-    size_train_dataset = X_train.shape[0]
+    print('Data will ber extracted in batches...')
 
 # Define model or load model
 if(os.path.exists(RESUME_MODEL)):
@@ -143,7 +146,7 @@ callbacks = [EarlyStopping(patience=21, verbose=1),
              HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]
 
 
-if not (DATA_AUGMENTATION):
+if (type(DATA_AUGMENTATION) != str):
     results = model.fit(x=X_train, y=y_train,
                         batch_size=BATCH_SIZE, 
                         epochs=EPOCHS,
@@ -160,10 +163,10 @@ else:
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
-        train_generator = DataGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
-                                        tobs=1000, path=PATH_TRAIN, shuffle=True)
-        valid_generator = DataGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
-                                        tobs=1000, path=PATH_TRAIN, shuffle=True)
+        train_generator = DataGenerator(path=PATH_TRAIN, data_shape=IM_SHAPE, zipf=True
+                                        batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = DataGenerator(path=PATH_TRAIN, data_shape=IM_SHAPE, zipf=True
+                                        batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),
