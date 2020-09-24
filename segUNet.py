@@ -1,4 +1,4 @@
-import os, random, numpy as np, sys
+import os, random, numpy as np, sys, random
 import tensorflow as tf
 
 #from tensorflow import keras
@@ -92,6 +92,9 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
         size_train_dataset = X_train.shape[0]
 else:
     print('Data will ber extracted in batches...')
+    test_size, datasize = 0.15, 10000 
+    train_idx = np.arange(0, datasize*(1-test_size), dtype=int) 
+    test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)     
 
 # Define model or load model
 if(os.path.exists(RESUME_MODEL)):
@@ -163,9 +166,9 @@ else:
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
-        train_generator = DataGenerator(path=PATH_TRAIN, data_shape=IM_SHAPE, zipf=True
+        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=True
                                         batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = DataGenerator(path=PATH_TRAIN, data_shape=IM_SHAPE, zipf=True
+        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True
                                         batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 

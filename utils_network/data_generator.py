@@ -10,26 +10,26 @@ class DataGenerator(Sequence):
     """
     Data generator of 3D data (calculate noise cube and smooth data).
     """
-    def __init__(self, batch_size=None, zipf=False,
-                 data_shape=None, tobs=1000, path='./', shuffle=True):
+    def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False,
+                 data_shape=None, tobs=1000, shuffle=True):
         """
         Arguments:
          tobs: int
                 observational time, for noise calcuation.
         """
         self.path = path
+        self.indexes = data_temp
+        print(data_temp)
         self.batch_size = batch_size
         self.data_shape = data_shape
         self.shuffle = shuffle
         self.zipf = zipf
 
-        # i, z, eff_fact, Rmfp, Tvir, np.mean(xn)
-        self.astro_par = np.loadtxt(self.path+'astro_params.txt', unpack=True)
-        self.indexes = self.astro_par[0,:].astype(int)
         self.data_size = len(self.indexes)
-        self.redshift = self.astro_par[1,:]
         self.on_epoch_end()
         
+        # i, z, eff_fact, Rmfp, Tvir, np.mean(xn)
+        self.astro_par = np.loadtxt(self.path+'astro_params.txt', unpack=True)
         with open(self.path+'user_params.txt','r') as f:
             self.user_par = eval(f.read())
 
@@ -51,8 +51,6 @@ class DataGenerator(Sequence):
 
     def on_epoch_end(self):
         # Updates indexes after each epoch
-        self.indexes = np.arange(self.data_size)
-        
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
@@ -64,6 +62,7 @@ class DataGenerator(Sequence):
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
 
         for i, idx in enumerate(indexes):
+            print(idx)
             if(self.zipf):
                 for var in glob('%s*part*.zip' %self.path):
                     try:
@@ -91,7 +90,7 @@ class DataGenerator(Sequence):
 
     def _noise_smt_dT(self, dT1, idx):
         assert idx == self.astro_par[0,idx]
-        z = self.redshift[idx]
+        z = self.astro_par[1, idx]
 
         # calculate uv-coverage 
         if(self.zipf):
@@ -132,7 +131,7 @@ class DataGenerator(Sequence):
 
     def _smt_xH(self, xH_box, idx):
         assert idx == self.astro_par[0,idx]
-        z = self.redshift[idx]
+        z = self.astro_par[1, idx]
 
         smt_xn = t2c.smooth_coeval(xH_box, z, 
                                     box_size_mpc=self.user_par['HII_DIM'],
