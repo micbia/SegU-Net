@@ -145,7 +145,7 @@ for i in tqdm(range(restart, astr_data.shape[1])):
     # --------------------------------------------
     
 
-    if(i%30 == 0 and MAKE_PLOTS):
+    if(i%1 == 0 and MAKE_PLOTS):
         plt.rcParams['xtick.direction'] = 'out'
         plt.rcParams['ytick.direction'] = 'out'
         plt.rcParams['figure.figsize'] = [20, 10]
@@ -259,6 +259,12 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         plt.setp(ax0.get_xticklabels(), visible=False)
         plt.savefig('%sPk_comparison_i%d.png' %(PATH_OUT, i), bbox_inches='tight')
         plt.subplots_adjust(hspace=0.0), plt.clf()
+
+        ds_data = np.vstack((ks_true, np.vstack((ps_true*ks_true**3/2/np.pi**2, np.vstack((np.vstack((ps_pred_ml*ks_pred_ml**3/2/np.pi**2, np.vstack((np.min(ps_tta*ks_pred_ml**3/2/np.pi**2, axis=0), np.max(ps_tta*ks_pred_ml**3/2/np.pi**2, axis=0))))), ps_pred_sp*ks_pred_sp**3/2/np.pi**2))))))
+        bsd_data = np.vstack((mfp_true[0], np.vstack((mfp_true[1], np.vstack((np.vstack((mfp_pred_ml[1], np.vstack((np.min(mfp_tta[:,1,:], axis=0), np.max(mfp_tta[:,1,:], axis=0))))), mfp_pred_sp[1]))))))
+
+        np.savetxt('%sds_data%s.txt' %(outpath, name), ds_data.T, fmt='%.6e', delimiter='\t', header='k [Mpc^-1]\tds_true\tds_seg_mean\tds_err_min\tds_err_max\tds_sp')
+        np.savetxt('%sbsd_data%s.txt' %(outpath, name), bsd_data.T, fmt='%.6e', delimiter='\t', header='R [Mpc]\tbs_true\tbs_seg_mean\tb_err_min\tbs_err_max\tbs_sp')
 
     new_astr_data = np.vstack((astr_data, phicoef_seg))
     new_astr_data = np.vstack((new_astr_data, phicoef_err))
