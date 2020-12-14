@@ -1,7 +1,6 @@
 import os, random, numpy as np, sys, random
 import tensorflow as tf
 
-#from tensorflow import keras
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 from glob import glob
@@ -14,10 +13,10 @@ from keras.utils import multi_gpu_model
 
 from config.net_config import NetworkConfig
 from utils_network.networks import Unet
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
+from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy, weighted_binary_crossentropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
 from utils_network.data_generator import RotateGenerator, DataGenerator
-from utils.other_utils import get_data, save_cbin
+from utils.other_utils import get_data, get_batch, save_cbin
 from utils_plot.plotting import plot_loss
 
 # title
@@ -26,7 +25,7 @@ print('  _____              _    _ _   _      _   \n / ____|            | |  | |
 config_file = sys.argv[1]
 conf = NetworkConfig(config_file)
 
-avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy}                                                                                  
+avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy, 'weighted_binary_crossentropy':weighted_binary_crossentropy}
 
 # --------------------- NETWORK & RESUME OPTIONS ---------------------
 RANDOM_SEED = 2020
@@ -56,9 +55,11 @@ if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
 else:
     RESUME_MODEL = './dummy'
     if(len(IM_SHAPE) == 3):
-        PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
+        PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
+        #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
     elif(len(IM_SHAPE) == 2):
-        PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
+        PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
+        #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
     else:
         print('!!! Wrong data dimension !!!')
     os.makedirs(PATH_OUT)
@@ -87,7 +88,8 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
         size_valid_dataset = X_valid.shape[0]
     else:
         print('Load dataset ...') 
-        X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
+        #X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
+        X, y = get_batch(path=PATH_TRAIN, img_shape=IM_SHAPE, size=30000, dataset_size=30000)
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
         size_train_dataset = X_train.shape[0]
 else:
@@ -167,10 +169,14 @@ else:
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
-        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=True,
-                                        batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True,
-                                        batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+    elif(DATA_AUGMENTATION == 'LC'):
+        print('\nData augmentation: Create LC data with noise cone and smooth...\n')
+        uvfile = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/uvmap_128_z7-20.pkl'
+        train_generator = LightConeGenerator(uvpath=uvfile, z_min=7., , tobs=1000)
+        #valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),

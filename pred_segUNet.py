@@ -65,10 +65,7 @@ if(AUGMENTATION != False and AUGMENTATION > 1):
 try:
     model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT+'checkpoints/', MODEL_EPOCH))
 except:
-    cb = {} 
-    for func in METRICS: 
-        if not isinstance(func, str): 
-            cb[func.__name__] = func 
+    cb = {func.__name__: func for func in METRICS if not isinstance(func, str)}
     model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT+'checkpoints/', MODEL_EPOCH), custom_objects=cb)
 
 
@@ -166,6 +163,6 @@ for i in IDX:
     plt.savefig(PATH_OUT+'Pk_i%d.png' %i, bbox_inches='tight')
     plt.close('all')
     """
-    save_cbin(PATH_OUT+'pred_dT_i%d.bin' %i, pred)
-    save_cbin(PATH_OUT+'true_dT_i%d.bin' %i, true)
+    #save_cbin(PATH_OUT+'pred_dT_i%d.bin' %i, pred)
+    #save_cbin(PATH_OUT+'true_dT_i%d.bin' %i, true)
 

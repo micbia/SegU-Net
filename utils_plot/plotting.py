@@ -1,6 +1,7 @@
 import matplotlib
 matplotlib.use('agg')
 import numpy as np, matplotlib.pyplot as plt
+from sklearn.metrics import matthews_corrcoef
 
 import sys
 sys.path.append("..")

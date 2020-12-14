@@ -8,6 +8,17 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops 
 from tensorflow.python.ops import math_ops 
 
+def weighted_binary_crossentropy(y_true, y_pred):
+    # Calculate the binary crossentropy
+    one_weight, zero_weight = K.mean(y_true, axis=(0,1)), K.mean(1-y_true, axis=(0,1))
+    b_ce = K.binary_crossentropy(y_true, y_pred)
+    
+    # Apply the weights
+    weight_vector = y_true * one_weight + (1. - y_true) * zero_weight
+    weighted_b_ce = weight_vector * b_ce
+    # Return the mean error
+    return K.mean(weighted_b_ce)
+
 def sigmoid_balanced_cross_entropy_with_logits(_sentinel=None, labels=None, logits=None, beta=None, name=None):
     nn_ops._ensure_xent_args("sigmoid_cross_entropy_with_logits", _sentinel,labels, logits)
     with ops.name_scope(name, "logistic_loss", [logits, labels]) as name: 
@@ -21,7 +32,7 @@ def sigmoid_balanced_cross_entropy_with_logits(_sentinel=None, labels=None, logi
         cond = (logits >= zeros) 
         relu_logits = array_ops.where(cond, logits, zeros) 
         neg_abs_logits = array_ops.where(cond, -logits, logits) 
-        beta=0.5
+        #beta=0.5
         balanced_cross_entropy = relu_logits*(1.-beta)-logits*labels*(1.-beta)+math_ops.log1p(math_ops.exp(neg_abs_logits))*((1.-beta)*(1.-labels)+beta*labels)
         return tf.reduce_mean(balanced_cross_entropy)
 

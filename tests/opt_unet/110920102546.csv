@@ -1,0 +1,2 @@
+round_epochs,val_loss,loss,activation,batch_size,coarse_dim,dropout,epochs,kernel_size,loss,lr,optimizer
+100,0.11816507279872894,0.07526182205904097,<keras.layers.advanced_activations.LeakyReLU object at 0x7f363885f278>,32,256,0.05,100,3,binary_crossentropy,0.001,<keras.optimizers.Adam object at 0x7f363885f400>
