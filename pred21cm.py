@@ -51,6 +51,11 @@ except:
 PATH_OUT += 'predictions/pred_tobs1200/'
 print(' PATH_OUTPUT = %s' %PATH_OUT)
 
+try:
+    os.makedirs(PATH_OUT+'data')
+    os.makedirs(PATH_OUT+'plots')
+except:
+    pass
 
 if(os.path.exists('%sastro_data.txt' %PATH_OUT)):
     astr_data = np.loadtxt('%sastro_data.txt' %PATH_OUT, unpack=True)
@@ -202,7 +207,7 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         ax2.set_xlabel('x [Mpc]')
         plt.subplots_adjust(hspace=0.1, wspace=0.01)
         for ax in axs.flat: ax.label_outer()
-        plt.savefig('%svisual_comparison_i%d.png' %(PATH_OUT, i), bbox_inches='tight')
+        plt.savefig('%svisual_comparison_i%d.png' %(PATH_OUT+'plots/', i), bbox_inches='tight')
 
         # Plot BSD-MFP of the prediction
         mfp_pred_ml = t2c.bubble_stats.mfp(X_seg, xth=0.5, boxsize=params['BOX_LEN'], iterations=2000000, verbose=False, upper_lim=False, bins=None, r_min=None, r_max=None)
@@ -245,7 +250,7 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         plt.setp(ax0.get_xticklabels(), visible=False)
         plt.subplots_adjust(hspace=0.0)
         ax1.tick_params(which='minor', axis='both', length=5, width=1.2)
-        plt.savefig('%sbs_comparison_i%d.png' %(PATH_OUT, i), bbox_inches='tight'), plt.clf()
+        plt.savefig('%sbs_comparison_i%d.png' %(PATH_OUT+'plots/', i), bbox_inches='tight'), plt.clf()
 
 
         # Plot dimensioneless power spectra of the x field
@@ -283,14 +288,14 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         ax1.tick_params(which='minor', axis='both', length=5, width=1.2)
         ax0.legend(loc=0, borderpad=0.5)
         plt.setp(ax0.get_xticklabels(), visible=False)
-        plt.savefig('%sPk_comparison_i%d.png' %(PATH_OUT, i), bbox_inches='tight')
+        plt.savefig('%sPk_comparison_i%d.png' %(PATH_OUT+'plots/', i), bbox_inches='tight')
         plt.subplots_adjust(hspace=0.0), plt.clf()
 
         ds_data = np.vstack((ks_true, np.vstack((ps_true*ks_true**3/2/np.pi**2, np.vstack((np.vstack((ps_pred_ml*ks_pred_ml**3/2/np.pi**2, np.vstack((np.min(ps_tta*ks_pred_ml**3/2/np.pi**2, axis=0), np.max(ps_tta*ks_pred_ml**3/2/np.pi**2, axis=0))))), ps_pred_sp*ks_pred_sp**3/2/np.pi**2))))))
         bsd_data = np.vstack((mfp_true[0], np.vstack((mfp_true[1], np.vstack((np.vstack((mfp_pred_ml[1], np.vstack((np.min(mfp_tta[:,1,:], axis=0), np.max(mfp_tta[:,1,:], axis=0))))), mfp_pred_sp[1]))))))
 
-        np.savetxt('%sds_data_i%d.txt' %(PATH_OUT, i), ds_data.T, fmt='%.6e', delimiter='\t', header='k [Mpc^-1]\tds_true\tds_seg_mean\tds_err_min\tds_err_max\tds_sp')
-        np.savetxt('%sbsd_data_i%d.txt' %(PATH_OUT, i), bsd_data.T, fmt='%.6e', delimiter='\t', header='R [Mpc]\tbs_true\tbs_seg_mean\tb_err_min\tbs_err_max\tbs_sp')
+        np.savetxt('%sds_data_i%d.txt' %(PATH_OUT+'data/', i), ds_data.T, fmt='%.6e', delimiter='\t', header='k [Mpc^-1]\tds_true\tds_seg_mean\tds_err_min\tds_err_max\tds_sp')
+        np.savetxt('%sbsd_data_i%d.txt' %(PATH_OUT+'data/', i), bsd_data.T, fmt='%.6e', delimiter='\t', header='R [Mpc]\tbs_true\tbs_seg_mean\tb_err_min\tbs_err_max\tbs_sp')
     
     new_astr_data = np.vstack((astr_data, phicoef_seg))
     new_astr_data = np.vstack((new_astr_data, phicoef_err))
@@ -352,7 +357,7 @@ ax1.set_xlim(xfrac.min()-0.02, xfrac.max()+0.02), ax1.set_xlabel(r'$x_i$')
 ax1.set_ylim(-0.02, 1.02), ax1.set_ylabel(r'$r_{\phi}$')
 ax1.legend(loc=4)
 plt.savefig('%sphi_coef.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
-
+plt.clf()
 
 # Plot correlation
 redshift, xn_mask_true, xn_seg, xn_seg_err, xn_sp = OrderNdimArray(np.loadtxt(PATH_OUT+'astro_data.txt', unpack=True, usecols=(1,9,10,11,12)), 1)
@@ -377,7 +382,7 @@ ax1.set_xlim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_xlabel(r
 ax1.set_ylim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_ylabel(r'$\rm x_{n,\,predict}$')
 plt.legend(loc=4)
 plt.savefig('%scorr.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
-
+plt.clf()
 
 # Betti numbers plot
 fig, (ax0, ax1, ax2) = plt.subplots(ncols=3, figsize=(23,5), sharex=True)
@@ -415,3 +420,4 @@ ax2.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax2.set_ylabel(r'$\rm\beta_2$', size
 
 plt.subplots_adjust(hspace=0.0)
 plt.savefig('%sbetti.png' %PATH_OUT, bbox_inches="tight")
+plt.clf()
