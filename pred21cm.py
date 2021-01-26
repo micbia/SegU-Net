@@ -24,13 +24,14 @@ print(title_a+'\n'+title_b)
 #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/06-10T11-27-37_128slice/'
 #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/07-10T10-22-36_128slice/'
 #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/16-10T15-10-17_128slice/'
+PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/new/02-10T23-52-36_128slice/'
 
-PATH_INPUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/data3D_128_061020/tobs1000.zip'
+PATH_INPUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/data3D_128_061020/tobs1200.zip'
+print(' PATH_INPUT = %s' %PATH_INPUT)
 if(PATH_INPUT[-3:] == 'zip'):
     ZIPFILE = True
     PATH_IN_ZIP = PATH_INPUT[PATH_INPUT.rfind('/')+1:-4]+'/'
     PATH_UNZIP = PATH_INPUT[:PATH_INPUT.rfind('/')+1]
-PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/new/02-10T23-52-36_128slice/'
 MAKE_PLOTS = True
 
 # load model
@@ -47,7 +48,8 @@ try:
     os.makedirs(PATH_OUT+'predictions')
 except:
     pass
-PATH_OUT += 'predictions/pred_tobs1000/'
+PATH_OUT += 'predictions/pred_tobs1200/'
+print(' PATH_OUTPUT = %s' %PATH_OUT)
 
 
 if(os.path.exists('%sastro_data.txt' %PATH_OUT)):
@@ -78,10 +80,26 @@ else:
     xn_seg = np.zeros_like(phicoef_seg)
     xn_err = np.zeros_like(phicoef_seg)
     xn_sp = np.zeros_like(phicoef_sp)
+    b0_true = np.zeros_like(phicoef_sp)
+    b1_true = np.zeros_like(phicoef_sp)
+    b2_true = np.zeros_like(phicoef_sp)
+    b0_sp = np.zeros_like(phicoef_sp)
+    b1_sp = np.zeros_like(phicoef_sp)
+    b2_sp = np.zeros_like(phicoef_sp)
+    b0_seg = np.zeros_like(phicoef_sp)
+    b1_seg = np.zeros_like(phicoef_sp)
+    b2_seg = np.zeros_like(phicoef_sp)
+
 
 params = {'HII_DIM':128, 'DIM':384, 'BOX_LEN':256}
 my_ext = [0, params['BOX_LEN'], 0, params['BOX_LEN']]
 
+zc = (astr_data[1,:] < 7.5) + (astr_data[1,:] > 8.3)
+c1 = (astr_data[5,:]<=0.25)*(astr_data[5,:]>=0.15)*zc
+c2 = (astr_data[5,:]<=0.55)*(astr_data[5,:]>=0.45)*zc
+c3 = (astr_data[5,:]<=0.75)*(astr_data[5,:]>=0.85)*zc
+indexes = astr_data[0,:]
+new_idx = indexes[c1+c2+c3].astype(int)
 
 for i in tqdm(range(restart, astr_data.shape[1])):
     z = astr_data[1,i]
@@ -102,6 +120,11 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         dT3 = t2c.read_cbin('%simage_21cm_i%d.bin' %(PATH_INPUT+'data/', i))
         mask_xn = t2c.read_cbin('%smask_21cm_i%d.bin' %(PATH_INPUT+'data/', i))
 
+    # Calculate Betti number
+    b0_true[i] = t2c.betti0(data=mask_xn)
+    b1_true[i] = t2c.betti1(data=mask_xn)
+    b2_true[i] = t2c.betti2(data=mask_xn)
+
     xn_mask[i] = np.mean(mask_xn)
 
     plt.rcParams['font.size'] = 20
@@ -117,11 +140,12 @@ for i in tqdm(range(restart, astr_data.shape[1])):
     X_tta = SegUnet21cmPredict(unet=model, x=dT3, TTA=True)
     X_seg = np.round(np.mean(X_tta, axis=0))
     X_seg_err = np.std(X_tta, axis=0)
-
+    
     # calculate Matthew coef and mean neutral fraction
     phicoef_seg[i] = matthews_corrcoef(mask_xn.flatten(), X_seg.flatten())
     xn_seg[i] = np.mean(X_seg)
 
+    
     # calculate errors
     phicoef_tta = np.zeros(X_tta.shape[0])
     xn_tta = np.zeros(X_tta.shape[0])
@@ -131,6 +155,11 @@ for i in tqdm(range(restart, astr_data.shape[1])):
 
     xn_err[i] = np.std(xn_tta)
     phicoef_err[i] = np.std(phicoef_tta)
+    
+    # Calculate Betti number
+    b0_seg[i] = t2c.betti0(data=X_seg)
+    b1_seg[i] = t2c.betti1(data=X_seg)
+    b2_seg[i] = t2c.betti2(data=X_seg)
 
     # --------------------------------------------
     #  -------- predict with Super-Pixel  --------
@@ -142,10 +171,14 @@ for i in tqdm(range(restart, astr_data.shape[1])):
     phicoef_sp[i] = matthews_corrcoef(mask_xn.flatten(), X_sp.flatten())
     xn_sp[i] = np.mean(X_sp)
     
-    # --------------------------------------------
-    
+    # Calculate Betti number
+    b0_sp[i] = t2c.betti0(data=X_sp)
+    b1_sp[i] = t2c.betti1(data=X_sp)
+    b2_sp[i] = t2c.betti2(data=X_sp)
 
-    if(i%1 == 0 and MAKE_PLOTS):
+    
+    # --------------------------------------------
+    if(i in new_idx and MAKE_PLOTS):
         plt.rcParams['xtick.direction'] = 'out'
         plt.rcParams['ytick.direction'] = 'out'
         plt.rcParams['figure.figsize'] = [20, 10]
@@ -153,30 +186,23 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         idx = params['HII_DIM']//2
 
         # Plot visual comparison
-        plt.subplot(121)
-        plt.title('Super-Pixel method', size=ls)
-        plt.imshow(X_sp[:,idx,:], origin='lower', cmap='jet', extent=my_ext)
-        plt.contour(mask_xn[:,idx,:], colors='lime', levels=[0.5], extent=my_ext)
-        plt.subplot(122)
-        plt.title('Segmentation with SegUNet', size=ls)
-        plt.imshow(X_seg[:,idx,:], origin='lower', cmap='jet', extent=my_ext)
-        plt.contour(mask_xn[:,idx,:], colors='lime', levels=[0.5], extent=my_ext)
-        plt.savefig('%svisual_comparison_i%d.png' %(PATH_OUT, i), bbox_inches='tight')
-        plt.clf()
-
-
-        # Plot visualisation of the error
-        fig, (ax0, ax1) = plt.subplots(figsize=(20, 10), ncols=2, sharey=True, sharex=True)
-        ax0.set_title('Segmentation with SegUNet ($r_{\phi}=%.3f$)' %phicoef_seg[i], size=ls)
-        ax0.imshow(X_seg[:,idx,:], origin='lower', cmap='jet', extent=my_ext)
-        ax0.contour(mask_xn[:,idx,:], colors='lime', levels=[0.5], extent=my_ext)
+        fig, axs = plt.subplots(figsize=(20,10), ncols=3, sharey=True, sharex=True)
+        (ax0, ax1, ax2) = axs
+        ax0.set_title('Super-Pixel ($r_{\phi}=%.3f$)' %phicoef_sp, size=ls)
+        ax0.imshow(X_sp[:,:,idx], origin='lower', cmap='jet', extent=my_ext)
+        ax0.contour(mask_xn[:,:,idx], colors='lime', levels=[0.5], extent=my_ext)
         ax0.set_xlabel('x [Mpc]'), ax0.set_ylabel('y [Mpc]')
-        ax1.set_title('SegUNet Pixel-Error', size=ls)
-        im = plt.imshow(X_seg_err[:,idx,:], origin='lower', cmap='jet', extent=my_ext)
-        fig.colorbar(im, label=r'$\sigma_{std}$', ax=ax1, pad=0.01, cax=fig.add_axes([0.92, 0.15, 0.03, 0.7]))
-        ax1.set_xlabel('x [Mpc]'), ax1.set_ylabel('y [Mpc]')
-        plt.savefig('%spixel_error_i%d.png' %(PATH_OUT, i), bbox_inches='tight'), plt.clf()
-
+        ax1.set_title('SegU-Net ($r_{\phi}=%.3f$)' %phicoef_seg, size=ls)
+        ax1.imshow(X_seg[:,:,idx], origin='lower', cmap='jet', extent=my_ext)
+        ax1.contour(mask_xn[:,:,idx], colors='lime', levels=[0.5], extent=my_ext)
+        ax1.set_xlabel('x [Mpc]')
+        ax2.set_title('SegUNet Pixel-Error', size=ls)
+        im = plt.imshow(X_seg_err[:,:,idx], origin='lower', cmap='jet', extent=my_ext)
+        fig.colorbar(im, label=r'$\sigma_{std}$', ax=ax2, pad=0.02, cax=fig.add_axes([0.905, 0.25, 0.02, 0.51]))
+        ax2.set_xlabel('x [Mpc]')
+        plt.subplots_adjust(hspace=0.1, wspace=0.01)
+        for ax in axs.flat: ax.label_outer()
+        plt.savefig('%svisual_comparison_i%d.png' %(PATH_OUT, i), bbox_inches='tight')
 
         # Plot BSD-MFP of the prediction
         mfp_pred_ml = t2c.bubble_stats.mfp(X_seg, xth=0.5, boxsize=params['BOX_LEN'], iterations=2000000, verbose=False, upper_lim=False, bins=None, r_min=None, r_max=None)
@@ -263,9 +289,9 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         ds_data = np.vstack((ks_true, np.vstack((ps_true*ks_true**3/2/np.pi**2, np.vstack((np.vstack((ps_pred_ml*ks_pred_ml**3/2/np.pi**2, np.vstack((np.min(ps_tta*ks_pred_ml**3/2/np.pi**2, axis=0), np.max(ps_tta*ks_pred_ml**3/2/np.pi**2, axis=0))))), ps_pred_sp*ks_pred_sp**3/2/np.pi**2))))))
         bsd_data = np.vstack((mfp_true[0], np.vstack((mfp_true[1], np.vstack((np.vstack((mfp_pred_ml[1], np.vstack((np.min(mfp_tta[:,1,:], axis=0), np.max(mfp_tta[:,1,:], axis=0))))), mfp_pred_sp[1]))))))
 
-        np.savetxt('%sds_data%s.txt' %(outpath, name), ds_data.T, fmt='%.6e', delimiter='\t', header='k [Mpc^-1]\tds_true\tds_seg_mean\tds_err_min\tds_err_max\tds_sp')
-        np.savetxt('%sbsd_data%s.txt' %(outpath, name), bsd_data.T, fmt='%.6e', delimiter='\t', header='R [Mpc]\tbs_true\tbs_seg_mean\tb_err_min\tbs_err_max\tbs_sp')
-
+        np.savetxt('%sds_data_i%d.txt' %(PATH_OUT, i), ds_data.T, fmt='%.6e', delimiter='\t', header='k [Mpc^-1]\tds_true\tds_seg_mean\tds_err_min\tds_err_max\tds_sp')
+        np.savetxt('%sbsd_data_i%d.txt' %(PATH_OUT, i), bsd_data.T, fmt='%.6e', delimiter='\t', header='R [Mpc]\tbs_true\tbs_seg_mean\tb_err_min\tbs_err_max\tbs_sp')
+    
     new_astr_data = np.vstack((astr_data, phicoef_seg))
     new_astr_data = np.vstack((new_astr_data, phicoef_err))
     new_astr_data = np.vstack((new_astr_data, phicoef_sp))
@@ -273,7 +299,16 @@ for i in tqdm(range(restart, astr_data.shape[1])):
     new_astr_data = np.vstack((new_astr_data, xn_seg))
     new_astr_data = np.vstack((new_astr_data, xn_err))
     new_astr_data = np.vstack((new_astr_data, xn_sp))
-    np.savetxt('%sastro_data.txt' %(PATH_OUT), new_astr_data.T, fmt='%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f', header='i\tz\teff_f\tRmfp\tTvir\tx_n\tphi_ML\tphi_err\tphi_SP\txn_mask\txn_seg\txn_err\txn_sp')
+    new_astr_data = np.vstack((new_astr_data, b0_true))
+    new_astr_data = np.vstack((new_astr_data, b1_true))
+    new_astr_data = np.vstack((new_astr_data, b2_true))
+    new_astr_data = np.vstack((new_astr_data, b0_seg))
+    new_astr_data = np.vstack((new_astr_data, b1_seg))
+    new_astr_data = np.vstack((new_astr_data, b2_seg))
+    new_astr_data = np.vstack((new_astr_data, b0_sp))
+    new_astr_data = np.vstack((new_astr_data, b1_sp))
+    new_astr_data = np.vstack((new_astr_data, b2_sp))
+    np.savetxt('%sastro_data.txt' %(PATH_OUT), new_astr_data.T, fmt='%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f', header='i\tz\teff_f\tRmfp\tTvir\tx_n\tphi_ML\tphi_err\tphi_SP\txn_mask\txn_seg\txn_err\txn_sp\tb0 true\tb1\tb2\tb0 ML\tb1\tb2\tb0 SP\tb1\tb2')
 
 
 # Plot phi coeff
@@ -342,3 +377,41 @@ ax1.set_xlim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_xlabel(r
 ax1.set_ylim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_ylabel(r'$\rm x_{n,\,predict}$')
 plt.legend(loc=4)
 plt.savefig('%scorr.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
+
+
+# Betti numbers plot
+fig, (ax0, ax1, ax2) = plt.subplots(ncols=3, figsize=(23,5), sharex=True)
+h = np.histogram(xn_mask_true, np.linspace(1e-5, 1., 20), density=True)
+new_x = h[1][:-1]+0.5*(h[1][1:]-h[1][:-1])
+
+# Betti 0
+f_b0_true = np.array([np.mean(b0_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax0.plot(new_x, f_b0_true, 'k--', label='Ground True')
+f_b0_seg = np.array([np.mean(b0_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax0.plot(new_x, f_b0_seg, label='SegUnet', color='tab:blue', marker='o')
+f_b0_sp = np.array([np.mean(b0_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax0.plot(new_x, f_b0_sp, label='Super-Pixel', color='tab:orange', marker='o')
+ax0.legend(loc=1)
+ax0.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax0.set_ylabel(r'$\rm\beta_0$', size=20)
+
+# Betti 1
+f_b1_true = np.array([np.mean(b1_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax1.plot(new_x, f_b1_true, 'k--', label='Ground True')
+f_b1_seg = np.array([np.mean(b1_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax1.plot(new_x, f_b1_seg, label='SegUnet', color='tab:blue', marker='o')
+f_b1_sp = np.array([np.mean(b1_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax1.plot(new_x, f_b1_sp, label='Super-Pixel', color='tab:orange', marker='o')
+ax1.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax1.set_ylabel(r'$\rm\beta_1$', size=20)
+
+# Betti 2
+f_b2_true = np.array([np.mean(b2_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax2.plot(new_x, f_b2_true, 'k--', label='Ground True')
+f_b2_seg = np.array([np.mean(b2_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax2.plot(new_x, f_b2_seg, label='SegUnet', color='tab:blue', marker='o')
+f_b2_sp = np.array([np.mean(b2_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+ax2.plot(new_x, f_b2_sp, label='Super-Pixel', color='tab:orange', marker='o')
+ax2.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax2.set_ylabel(r'$\rm\beta_2$', size=20)
+
+
+plt.subplots_adjust(hspace=0.0)
+plt.savefig('%sbetti.png' %PATH_OUT, bbox_inches="tight")
