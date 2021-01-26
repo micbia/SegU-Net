@@ -188,11 +188,11 @@ for i in tqdm(range(restart, astr_data.shape[1])):
         # Plot visual comparison
         fig, axs = plt.subplots(figsize=(20,10), ncols=3, sharey=True, sharex=True)
         (ax0, ax1, ax2) = axs
-        ax0.set_title('Super-Pixel ($r_{\phi}=%.3f$)' %phicoef_sp, size=ls)
+        ax0.set_title('Super-Pixel ($r_{\phi}=%.3f$)' %phicoef_sp[i], size=ls)
         ax0.imshow(X_sp[:,:,idx], origin='lower', cmap='jet', extent=my_ext)
         ax0.contour(mask_xn[:,:,idx], colors='lime', levels=[0.5], extent=my_ext)
         ax0.set_xlabel('x [Mpc]'), ax0.set_ylabel('y [Mpc]')
-        ax1.set_title('SegU-Net ($r_{\phi}=%.3f$)' %phicoef_seg, size=ls)
+        ax1.set_title('SegU-Net ($r_{\phi}=%.3f$)' %phicoef_seg[i], size=ls)
         ax1.imshow(X_seg[:,:,idx], origin='lower', cmap='jet', extent=my_ext)
         ax1.contour(mask_xn[:,:,idx], colors='lime', levels=[0.5], extent=my_ext)
         ax1.set_xlabel('x [Mpc]')
