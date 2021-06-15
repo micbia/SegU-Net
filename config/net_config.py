@@ -30,16 +30,26 @@ class NetworkConfig:
         self.learn_rate     = eval(trainconfig['LR'])
         self.recomplile     = eval(trainconfig['RECOMP'])
         self.gpus           = eval(trainconfig['GPUS'])
-        if(', ' in trainconfig['PATH']):
-            self.path       = trainconfig['PATH'].split(', ')
+        if(', ' in trainconfig['DATASET_PATH']):
+            self.path       = trainconfig['DATASET_PATH'].split(', ')
         else:
-            self.path       = trainconfig['PATH']
+            self.path       = trainconfig['DATASET_PATH']
 
-        resumeconfig = config['RESUME']
-        self.resume_path    = StringOrNone(resumeconfig['RESUME_PATH'])
-        self.best_epoch     = eval(resumeconfig['BEST_EPOCH'])
-        self.resume_epoch   = eval(resumeconfig['RESUME_EPOCH'])
-
+        self.train_data = trainconfig['TRAIN_DATA']
+        self.pred_data = trainconfig['PRED_DATA']
+        
+        try:
+            resumeconfig = config['RESUME']
+            self.resume_path    = StringOrNone(resumeconfig['RESUME_PATH'])
+            self.best_epoch     = eval(resumeconfig['BEST_EPOCH'])
+            self.resume_epoch   = eval(resumeconfig['RESUME_EPOCH'])
+        except:
+            f = open(CONFIG_FILE, 'a')
+            f.write('\n\n[RESUME]')
+            f.write('\nRESUME_PATH = None')
+            f.write('\nBEST_EPOCH = 0')
+            f.write('\nRESUME_EPOCH = 0')
+            f.close()
 
 class PredictionConfig:
     def __init__(self, CONFIG_FILE):
@@ -49,15 +59,20 @@ class PredictionConfig:
         config.read(self.config_file)
  
         predconfig = config['PREDICTION']
-        self.img_shape      = tuple(np.array(eval(predconfig['IMG_SHAPE']), dtype=int))
         self.model_epoch    = eval(predconfig['MODEL_EPOCH'])
         self.tta_wrap       = eval(predconfig['TTA_WRAP'])
         self.augmentation   = eval(predconfig['AUGMENT'])
         self.val            = eval(predconfig['EVAL'])
-        if(', ' in predconfig['METRICS']):
-            self.metrics    = predconfig['METRICS'].split(', ')
-        else:
-            self.metrics    = predconfig['METRICS']
-        self.path_pred      = predconfig['PATH_PREDIC']
-        self.path_out       = predconfig['PATH_OUT']
         self.indexes        = np.array(eval(predconfig['INDEXES']))
+        self.path_out       = StringOrNone(predconfig['MODEL_PATH'])
+
+        trainconfig = config['TRAINING']
+        self.path_pred      = trainconfig['DATASET_PATH']
+        self.pred_data      = trainconfig['PRED_DATA']
+        self.img_shape      = tuple(np.array(eval(trainconfig['IMG_SHAPE']), dtype=int))
+        if(', ' in trainconfig['METRICS']):
+            self.metrics    = np.append(trainconfig['METRICS'].split(', '),trainconfig['LOSS'])
+        else:
+            self.metrics    = np.append(trainconfig['METRICS'], trainconfig['LOSS'])
+
+        resumeconfig = config['RESUME']

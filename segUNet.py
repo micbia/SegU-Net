@@ -41,7 +41,8 @@ OPTIMIZER = Adam(lr=conf.learn_rate)
 METRICS = [avail_metrics[m] for m in conf.metrics]
 RECOMPILE = conf.recomplile
 GPU = conf.gpus
-PATH_TRAIN = conf.path
+PATH_TRAIN = conf.path+conf.train_data
+PATH_DATASET = conf.path
 BEST_EPOCH = conf.best_epoch
 # if you want to restart from the previous best model set RESUME_EPOCH = BEST_EPOCH
 RESUME_EPOCH = conf.resume_epoch
@@ -55,11 +56,9 @@ if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
 else:
     RESUME_MODEL = './dummy'
     if(len(IM_SHAPE) == 3):
-        PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
-        #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
+        PATH_OUT = '%s/outputs/%s_%dcube/' %(PATH_DATASET, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
     elif(len(IM_SHAPE) == 2):
-        PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
-        #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
+        PATH_OUT = '%s/outputs/%s_%dslice/' %(PATH_DATASET, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
     else:
         print('!!! Wrong data dimension !!!')
     os.makedirs(PATH_OUT)
@@ -90,6 +89,7 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
         print('Load dataset ...') 
         #X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
         X, y = get_batch(path=PATH_TRAIN, img_shape=IM_SHAPE, size=30000, dataset_size=30000)
+        #X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
         size_train_dataset = X_train.shape[0]
 else:
@@ -190,6 +190,18 @@ else:
 # Plot Loss
 plot_loss(output=results, path=PATH_OUT+'outputs/')
 
+# write info for prediction on config_file
+best_model_epoch = max([int(sf[sf.rfind('p')+1:sf.rfind('.')]) for sf in glob(PATH_OUT+'checkpoints/model-sem21cm_ep*.h5')]) 
+f = open(config_file, 'a')
+f.write('\n\n[PREDICTION]')
+f.write('\nMODEL_EPOCH = %d' %best_model_epoch)
+f.write('\nMODEL_PATH = %s' %(PATH_OUT))
+f.write('\nTTA_WRAP = False')
+f.write('\nAUGMENT = False')
+f.write('\nEVAL = True')
+f.write('\nINDEXES = 0') 
+f.close()
+os.system('cp %s %s' %(config_file, PATH_OUT))
 
-# copy weight to output directory
+# insert accuracy in the output directory name
 os.system('mv %s %s_acc%d' %(PATH_OUT[:-1], PATH_OUT[:-1], 100*np.max(results.history["val_binary_accuracy"])))

@@ -17,16 +17,11 @@ title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | 
 title_b = ' _____              _ _      _         ___  __                \n|  __ \            | (_)    | |       |__ \/_ |               \n| |__) | __ ___  __| |_  ___| |_ ___     ) || | ___ _ __ ___  \n|  ___/ `__/ _ \/ _` | |/ __| __/ __|   / / | |/ __| `_ ` _ \ \n| |   | | |  __/ (_| | | (__| |_\__ \  / /_ | | (__| | | | | |\n|_|   |_|  \___|\__,_|_|\___|\__|___/ |____||_|\___|_| |_| |_|\n'
 print(title_a+'\n'+title_b)
 
-#PATH_INPUT = '/ichec/work/subgridEoRevol/michele/input_Segnet/data3D_128_061020/'
-#PATH_INPUT = '/ichec/work/subgridEoRevol/michele/input_Segnet/tobs1000/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/02-10T23-52-36_128slice/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/05-10T21-50-11_128slice/' 
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/06-10T11-27-37_128slice/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/07-10T10-22-36_128slice/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/16-10T15-10-17_128slice/'
-PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/new/02-10T23-52-36_128slice/'
+config_file = sys.argv[1]
+conf = PredictionConfig(config_file)
+PATH_OUT = conf.path_out
+PATH_INPUT = conf.path+conf.pred_data
 
-PATH_INPUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/data3D_128_061020/tobs1200.zip'
 print(' PATH_INPUT = %s' %PATH_INPUT)
 if(PATH_INPUT[-3:] == 'zip'):
     ZIPFILE = True
@@ -36,12 +31,10 @@ MAKE_PLOTS = True
 
 # load model
 avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy} 
-conf = NetworkConfig(glob(PATH_OUT+'*.ini')[0])
-PATH_MODEL = PATH_OUT+'checkpoints/'
 MODEL_EPOCH = conf.best_epoch
 METRICS = [avail_metrics[m] for m in np.append(conf.loss, conf.metrics)]
 cb = {func.__name__:func for func in METRICS if not isinstance(func, str)}
-model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_MODEL, MODEL_EPOCH), custom_objects=cb)
+model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT+'checkpoints/', MODEL_EPOCH), custom_objects=cb)
 
 
 try:
