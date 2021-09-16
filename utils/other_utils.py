@@ -4,6 +4,18 @@ from glob import glob
 from tqdm import tqdm
 
 
+def OrderNdimArray(arr, idx_to_sort):
+    ''' Order N-dim array giving the index of sorting
+    Parameters:
+        * arr (array): N-dim or simple array to sort
+        * idx_to_sort (int): sorteing array index
+    Returns:
+        sorted array by desired array index
+        '''
+    new_arr = np.array(sorted(arr.T, key=operator.itemgetter(idx_to_sort)))
+    return new_arr.T
+    
+
 def SortArray(arr, idx_to_sort):
     ''' Order N-dim array giving the index of sorting
     Parameters:
@@ -35,6 +47,37 @@ def RescaleData(arr, a=-1, b=1):
 def get_extend(a):
     ext = a[a.rfind('.'):]
     return ext
+
+def get_data_lc(path, fname=None, shuffle=False):
+    lc_dT = read_cbin(filename=path+fname+'_dT3.dat', dimensions=3)
+    #lc_mask = read_cbin(filename=path+fname+'_mask.dat', dimensions=3)
+    lc_mask = read_cbin(filename=path+fname+'_dT.dat', dimensions=3)
+
+    size = lc_dT.shape[-1]
+
+    X = np.zeros((size, lc_dT.shape[0], lc_dT.shape[1]), dtype=np.float32)
+    Y = np.zeros((size, lc_dT.shape[0], lc_dT.shape[1]), dtype=np.float32)
+    
+    for i in tqdm(range(size)):
+        X[i] = lc_dT[...,i]
+        Y[i] = lc_mask[...,i]
+    
+    X = X[..., np.newaxis]
+    Y = Y[..., np.newaxis]
+
+    #X = RescaleData(arr=X, a=0, b=1)
+    #Y = RescaleData(arr=Y, a=0, b=1)
+    X = RescaleData(arr=X, a=-1, b=1)
+    Y = RescaleData(arr=Y, a=-1, b=1)
+
+    if(shuffle):
+        idxs = np.array(range(size))
+        np.random.shuffle(idxs)
+
+        X = X[idxs]
+        Y = Y[idxs]
+
+    return X, Y
 
 # Get train images and masks
 def get_data(path, img_shape, shuffle=False, norm=False):

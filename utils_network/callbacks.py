@@ -31,9 +31,14 @@ class HistoryCheckpoint(Callback):
         epoch += 1
         fname = self.filepath+'%s_ep-%d.txt'
 
-        if(epoch % self.save_freq == 0): 
+        if(epoch % self.save_freq == 0 and epoch != 1):
             for mname in logs:
-                self.stor_arr[mname] = np.append(self.stor_arr[mname], logs[mname])
+                if(self.stor_arr == {}):
+                    self.stor_arr = logs
+                else:
+                    self.stor_arr[mname] = np.append(self.stor_arr[mname], logs[mname])
+                    pass
+
                 if(self.in_epoch == 0 and self.count == 0):
                     np.savetxt(fname %(mname, epoch), self.stor_arr[mname])
                 elif(self.in_epoch != 0 and self.count == 0):
@@ -48,11 +53,13 @@ class HistoryCheckpoint(Callback):
             self.count += 1
             self.prev_epoch = epoch
             for mname in logs:
-                self.stor_arr[mname] = []         # empty storing array
+                self.stor_arr = {}         # empty storing array
 
             if(self.verbose): print('Updated Logs checkpoints for epoch %d.' %epoch)
         else:
-            for mname in logs:
+            if(self.stor_arr == {}):
+                self.stor_arr = logs
+            else:
                 self.stor_arr[mname] = np.append(self.stor_arr[mname], logs[mname])
 
 

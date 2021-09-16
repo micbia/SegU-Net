@@ -1,17 +1,13 @@
 #!/bin/sh
 #SBATCH --job-name=py21cm
-#SBATCH --nodes 1
-##SBATCH --ntasks 1
-##SBATCH --cpus-per-task 1
-##SBATCH --ntasks-per-core 1
-#SBATCH --exclusive
+#SBATCH --nodes 4
+#SBATCH --ntasks-per-node 5
 
+#SBATCH --exclusive
 #SBATCH --account=dp004
 #SBATCH --partition=cosma6
 #SBATCH --time=24:00:00
 
-##SBATCH --output=../logs/data21cm%A.%j.out
-##SBATCH --error=../logs/data21cm%A.%j.err
 #SBATCH --output=../logs/data21cm.%j.out
 #SBATCH --error=../logs/data21cm.%j.err
 #SBATCH --mail-type=END
@@ -31,10 +27,9 @@ module load fftw/3.3.8
 # python env
 module load pythonconda3/2020-02
 
-#DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_280621/'
-#DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_050721/'
-DIR='/cosma6/data/dp004/dc-bian1/inputs/'
+#DIR='/cosma6/data/dp004/dc-bian1/inputs/data3D_128_train_190821/'
+#DIR='/cosma6/data/dp004/dc-bian1/inputs/data3D_128_valid_190821/'
+#mpiexec -n ${SLURM_NTASKS} python create_data_21cmfast_mpi.py $DIR
 
-#python create_LC.py $DIR
-#python create_LC.py $DIR 0 10
-python create_1LC.py $DIR
+DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_train_060921/'
+mpiexec -n ${SLURM_NTASKS} python create_lightcone_21cmfast_mpi.py $DIR

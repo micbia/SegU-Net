@@ -18,7 +18,7 @@ def GenerateSeed():
 user_params = {'HII_DIM':128, 'DIM':384, 'BOX_LEN':256}
 cosmo_params = {'OMm':0.27, 'OMb':0.046, 'SIGMA_8':0.82, 'POWER_INDEX':0.96}
 
-uvfile = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/uvmap_128_z7-20.pkl'
+uvfile = '/cosma6/data/dp004/dc-bian1/uvmap_128_z7-20.pkl'
 tobs = 1000
 
 

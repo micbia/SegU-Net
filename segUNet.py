@@ -1,4 +1,4 @@
-import os, random, numpy as np, sys, random
+import os, random, numpy as np, sys, random, pickle
 import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
@@ -13,10 +13,10 @@ from keras.utils import multi_gpu_model
 
 from config.net_config import NetworkConfig
 from utils_network.networks import Unet
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy, weighted_binary_crossentropy
+from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
 from utils_network.data_generator import RotateGenerator, DataGenerator
-from utils.other_utils import get_data, get_batch, save_cbin
+from utils.other_utils import get_data, get_data_lc, get_batch, save_cbin
 from utils_plot.plotting import plot_loss
 
 # title
@@ -25,7 +25,9 @@ print('  _____              _    _ _   _      _   \n / ____|            | |  | |
 config_file = sys.argv[1]
 conf = NetworkConfig(config_file)
 
-avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy, 'weighted_binary_crossentropy':weighted_binary_crossentropy}
+#avail_metrics = {'r2score':r2score, 'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy, 'precision':precision, 'recall':recall}
+with open('utils_network/avail_metrics.pkl', 'rb') as data:
+    avail_metrics = pickle.loads(data.read())
 
 # --------------------- NETWORK & RESUME OPTIONS ---------------------
 RANDOM_SEED = 2020
@@ -41,7 +43,8 @@ OPTIMIZER = Adam(lr=conf.learn_rate)
 METRICS = [avail_metrics[m] for m in conf.metrics]
 RECOMPILE = conf.recomplile
 GPU = conf.gpus
-PATH_TRAIN = conf.path
+PATH_TRAIN = conf.path+conf.train_data
+PATH_DATASET = conf.path
 BEST_EPOCH = conf.best_epoch
 # if you want to restart from the previous best model set RESUME_EPOCH = BEST_EPOCH
 RESUME_EPOCH = conf.resume_epoch
@@ -55,11 +58,9 @@ if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
 else:
     RESUME_MODEL = './dummy'
     if(len(IM_SHAPE) == 3):
-        PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
-        #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dcube/' %IM_SHAPE[0]    
+        PATH_OUT = '%s/outputs/%s_%dcube/' %(PATH_DATASET, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
     elif(len(IM_SHAPE) == 2):
-        PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
-        #PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/'+ datetime.now().strftime('%d-%mT%H-%M-%S') + '_%dslice/' %IM_SHAPE[0]
+        PATH_OUT = '%s/outputs/%s_%dslice/' %(PATH_DATASET, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
     else:
         print('!!! Wrong data dimension !!!')
     os.makedirs(PATH_OUT)
@@ -89,7 +90,8 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
     else:
         print('Load dataset ...') 
         #X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
-        X, y = get_batch(path=PATH_TRAIN, img_shape=IM_SHAPE, size=30000, dataset_size=30000)
+        #X, y = get_batch(path=PATH_TRAIN, img_shape=IM_SHAPE, size=30000, dataset_size=30000)
+        X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
         size_train_dataset = X_train.shape[0]
 else:
@@ -131,7 +133,7 @@ if(os.path.exists(RESUME_MODEL)):
         print('\nScore resumed model:\n loss: %.3f' %resume_loss)
 else: 
     print('\nModel created')
-    if(GPU == None):
+    if(GPU == None or GPU == 0):
         model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
     else:
         print('\nModel on GPU\n')
@@ -174,7 +176,7 @@ else:
     elif(DATA_AUGMENTATION == 'LC'):
         print('\nData augmentation: Create LC data with noise cone and smooth...\n')
         uvfile = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/uvmap_128_z7-20.pkl'
-        train_generator = LightConeGenerator(uvpath=uvfile, z_min=7., , tobs=1000)
+        train_generator = LightConeGenerator(uvpath=uvfile, z_min=7., tobs=1000)
         #valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
 
@@ -187,9 +189,21 @@ else:
                                   shuffle=True)
 
 
+# write info for prediction on config_file
+best_model_epoch = max([int(sf[sf.rfind('p')+1:sf.rfind('.')]) for sf in glob(PATH_OUT+'checkpoints/model-sem21cm_ep*.h5')]) 
+f = open(glob('%s*.ini' %PATH_OUT)[0], 'a')
+f.write('\n\n[PREDICTION]')
+f.write('\nMODEL_EPOCH = %d' %best_model_epoch)
+f.write('\nMODEL_PATH = %s' %(PATH_OUT))
+f.write('\nTTA_WRAP = False')
+f.write('\nAUGMENT = False')
+f.write('\nEVAL = True')
+f.write('\nINDEXES = 0') 
+f.close()
+
 # Plot Loss
-plot_loss(output=results, path=PATH_OUT+'outputs/')
+#plot_loss(output=results, path=PATH_OUT+'outputs/')
+os.system('python utils_plot/postpros_plot.py %s/outputs/' %PATH_OUT)
 
-
-# copy weight to output directory
-os.system('mv %s %s_acc%d' %(PATH_OUT[:-1], PATH_OUT[:-1], 100*np.max(results.history["val_binary_accuracy"])))
+# Insert accuracy in the output directory name
+#os.system('mv %s %s_acc%d' %(PATH_OUT[:-1], PATH_OUT[:-1], 100*np.max(results.history["val_binary_accuracy"])))

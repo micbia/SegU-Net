@@ -1,33 +1,32 @@
 #!/bin/sh
 #SBATCH --job-name=py21cm
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
-#SBATCH --ntasks-per-core=1
-
-#SBATCH --account=Pra17_4382
-#SBATCH --partition=gll_usr_prod
+#SBATCH --ntasks 1
+#SBATCH --account=dp004
+#SBATCH --partition=cosma6
 #SBATCH --time=2:00:00
 
-#SBATCH --output=msg/data21cm-out.%j
-#SBATCH --error=msg/data21cm-err.%j
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=END
 #SBATCH --mail-user=mb756@sussex.ac.uk
 
-#SBATCH --array=0-29
-#SBATCH --error=msg/data21cm-err%A.%j
+#SBATCH --array=0-4
+#SBATCH --output=../logs/data21cm%A.%j.out
+#SBATCH --error=../logs/data21cm%A.%j.err
 
-module load intel intelmpi
-module load profile/base autoload python/3.6.4
-module load profile/base autoload fftw
-module load profile/base autoload gsl
+# This adds various useful things to your PATH
+module load utils
+module unload python/2.7.15
 
-export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-export OMP_PLACES=cores  # pinning threads correctly
+# for py21cmFAST
+module load intel_comp/2020-update2
+module load intel_mpi/2020-update2
+module load fftw/3.3.8
+
+# python env
+module load pythonconda3/2020-02
 
 echo $SLURM_ARRAY_TASK_MAX
 #DIR='./new_start'
-DIR='/gpfs/scratch/userexternal/mbianco0/data3D_128_030920/'
+DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_180621/'
 
 if [ -d "$DIR" ]; then
     echo " Resume 21cmFast data..."
@@ -39,4 +38,5 @@ else
     mkdir $DIR/parameters
 fi
 
-srun python create_data_21cmfast.py $DIR
+#python create_data_21cmfast.py $DIR
+python create_LC.py $DIR

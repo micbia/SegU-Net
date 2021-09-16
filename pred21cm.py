@@ -6,49 +6,43 @@ from glob import glob
 from tensorflow.keras.models import load_model
 from tqdm import tqdm
 
-from config.net_config import NetworkConfig
-from utils.other_utils import RotateCube
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, balanced_cross_entropy, phi_coef
+from config.net_config import PredictionConfig
+from utils.other_utils import RotateCube, OrderNdimArray
+from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.prediction import SegUnet21cmPredict
 
-from myutils.utils import OrderNdimArray
 
 title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | |  \| | ___| |_ \n\t\t| |  | | . ` |/ _ \ __|\n\t\t| |__| | |\  |  __/ |_ \n\t\t \____/|_| \_|\___|\__|\n'
 title_b = ' _____              _ _      _         ___  __                \n|  __ \            | (_)    | |       |__ \/_ |               \n| |__) | __ ___  __| |_  ___| |_ ___     ) || | ___ _ __ ___  \n|  ___/ `__/ _ \/ _` | |/ __| __/ __|   / / | |/ __| `_ ` _ \ \n| |   | | |  __/ (_| | | (__| |_\__ \  / /_ | | (__| | | | | |\n|_|   |_|  \___|\__,_|_|\___|\__|___/ |____||_|\___|_| |_| |_|\n'
 print(title_a+'\n'+title_b)
 
-#PATH_INPUT = '/ichec/work/subgridEoRevol/michele/input_Segnet/data3D_128_061020/'
-#PATH_INPUT = '/ichec/work/subgridEoRevol/michele/input_Segnet/tobs1000/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/02-10T23-52-36_128slice/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/05-10T21-50-11_128slice/' 
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/06-10T11-27-37_128slice/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/07-10T10-22-36_128slice/'
-#PATH_OUT = '/ichec/work/subgridEoRevol/michele/output_SegNet/16-10T15-10-17_128slice/'
-PATH_OUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/outputs/new/02-10T23-52-36_128slice/'
+config_file = sys.argv[1]
+conf = PredictionConfig(config_file)
+PATH_OUT = conf.path_out
+PATH_INPUT = conf.path_pred+conf.pred_data
 
-PATH_INPUT = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/data3D_128_061020/tobs1200.zip'
 print(' PATH_INPUT = %s' %PATH_INPUT)
 if(PATH_INPUT[-3:] == 'zip'):
     ZIPFILE = True
     PATH_IN_ZIP = PATH_INPUT[PATH_INPUT.rfind('/')+1:-4]+'/'
     PATH_UNZIP = PATH_INPUT[:PATH_INPUT.rfind('/')+1]
-MAKE_PLOTS = True
+else:
+    ZIPFILE = False
+MAKE_PLOTS = False
 
 # load model
-avail_metrics = {'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy} 
-conf = NetworkConfig(glob(PATH_OUT+'*.ini')[0])
-PATH_MODEL = PATH_OUT+'checkpoints/'
-MODEL_EPOCH = conf.best_epoch
+avail_metrics = {'r2score':r2score, 'binary_accuracy':'binary_accuracy', 'iou':iou, 'dice_coef':dice_coef, 'iou_loss':iou_loss, 'dice_coef_loss':dice_coef_loss, 'phi_coef':phi_coef, 'mse':'mse', 'mae':'mae', 'binary_crossentropy':'binary_crossentropy', 'balanced_cross_entropy':balanced_cross_entropy, 'precision':precision, 'recall':recall}
+MODEL_EPOCH = conf.model_epoch
 METRICS = [avail_metrics[m] for m in np.append(conf.loss, conf.metrics)]
 cb = {func.__name__:func for func in METRICS if not isinstance(func, str)}
-model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_MODEL, MODEL_EPOCH), custom_objects=cb)
+model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_OUT+'checkpoints/', MODEL_EPOCH), custom_objects=cb)
 
 
 try:
     os.makedirs(PATH_OUT+'predictions')
 except:
     pass
-PATH_OUT += 'predictions/pred_tobs1200/'
+PATH_OUT += 'predictions/'
 print(' PATH_OUTPUT = %s' %PATH_OUT)
 
 try:
@@ -74,7 +68,7 @@ else:
         with zipfile.ZipFile(PATH_INPUT, 'r') as myzip:
             astr_data = np.loadtxt(myzip.open('%sastro_params.txt' %PATH_IN_ZIP), unpack=True)
     else:
-        astr_data = np.loadtxt('%sastro_params.txt' %PATH_INPUT, unpack=True)
+        astr_data = np.loadtxt('%sastro_params_test.txt' %PATH_INPUT, unpack=True)
 
     restart = 0
 
@@ -99,12 +93,15 @@ else:
 params = {'HII_DIM':128, 'DIM':384, 'BOX_LEN':256}
 my_ext = [0, params['BOX_LEN'], 0, params['BOX_LEN']]
 
+"""
 zc = (astr_data[1,:] < 7.5) + (astr_data[1,:] > 8.3)
 c1 = (astr_data[5,:]<=0.25)*(astr_data[5,:]>=0.15)*zc
 c2 = (astr_data[5,:]<=0.55)*(astr_data[5,:]>=0.45)*zc
 c3 = (astr_data[5,:]<=0.75)*(astr_data[5,:]>=0.85)*zc
 indexes = astr_data[0,:]
 new_idx = indexes[c1+c2+c3].astype(int)
+"""
+new_idx = conf.indexes
 
 #for i in tqdm(range(restart, astr_data.shape[1])):
 print(new_idx)
@@ -318,97 +315,100 @@ for new_i in tqdm(range(3, new_idx.size)):
     np.savetxt('%sastro_data.txt' %(PATH_OUT), new_astr_data.T, fmt='%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header='i\tz\teff_f\tRmfp\tTvir\tx_n\tphi_ML\tphi_err phi_SP\txn_mask xn_seg\txn_err\txn_sp\tb0 true b1\tb2\tb0 ML\tb1\tb2\tb0 SP\tb1\tb2')
     np.savetxt('%sastro_data_sample.txt' %(PATH_OUT+'data/'), new_astr_data[:,new_idx].T, fmt='%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d', header='i\tz\teff_f\tRmfp\tTvir\tx_n\tphi_ML\tphi_err phi_SP\txn_mask xn_seg\txn_err\txn_sp\tb0 true b1\tb2\tb0 ML\tb1\tb2\tb0 SP\tb1\tb2')
 
-# Plot phi coeff
-plt.rcParams['font.size'] = 16 
-redshift, xfrac, phicoef_seg, phicoef_seg_err, phicoef_sp, xn_mask_true, xn_seg, xn_seg_err, xn_sp = OrderNdimArray(np.loadtxt(PATH_OUT+'astro_data.txt', unpack=True, usecols=(1,5,6,7,8,9,10,11,12)), 1)
+if(MAKE_PLOTS):
+    # Plot phi coeff
+    plt.rcParams['font.size'] = 16 
+    redshift, xfrac, phicoef_seg, phicoef_seg_err, phicoef_sp, xn_mask_true, xn_seg, xn_seg_err, xn_sp = OrderNdimArray(np.loadtxt(PATH_OUT+'astro_data_test.txt', unpack=True, usecols=(1,5,6,7,8,9,10,11,12)), 1)
 
-print('phi_coef = %.3f +/- %.3f\t(SegUnet)' %(np.mean(phicoef_seg), np.std(phicoef_seg)))
-print('phi_coef = %.3f\t\t(Superpixel)' %(np.mean(phicoef_sp)))
+    print('phi_coef = %.3f +/- %.3f\t(SegUnet)' %(np.mean(phicoef_seg), np.std(phicoef_seg)))
+    print('phi_coef = %.3f\t\t(Superpixel)' %(np.mean(phicoef_sp)))
 
-fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(20,8))
-#ax0.hlines(y=np.mean(phicoef_seg), xmin=0, xmax=1, ls='--', alpha=0.5)
-#ax0.fill_between(x=np.linspace(0, 1, 100), y1=np.mean(phicoef_seg)+np.std(phicoef_seg), y2=np.mean(phicoef_seg)-np.std(phicoef_seg), alpha=0.5, color='lightgray')
-# MCC SegUnet
-cm = matplotlib.cm.plasma
-sc = ax0.scatter(xfrac, phicoef_seg, c=redshift, vmin=7, vmax=9, s=25, cmap=cm, marker='.')
-norm = matplotlib.colors.Normalize(vmin=7, vmax=9, clip=True)
-mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cm)
-redshift_color = np.array([(mapper.to_rgba(v)) for v in redshift])
-for x, y, e, clr in zip(xfrac, phicoef_seg, phicoef_seg_err, redshift_color):
-    ax0.errorbar(x, y, e, lw=1, marker='o', capsize=3, color=clr)
-ax0.set_xlim(xfrac.min()-0.02, xfrac.max()+0.02), ax0.set_xlabel(r'$x_i$')
-ax0.set_ylim(-0.02, 1.02), ax0.set_ylabel(r'$r_{\phi}$')
-fig.colorbar(sc, ax=ax0, pad=0.01, label=r'$z$')
-ax2 = ax0.twinx()
-ax2.hist(xfrac, np.linspace(0.09, 0.81, 15), density=True, histtype='step', color='tab:blue', alpha=0.5)
-ax2.axes.get_yaxis().set_visible(False)
-# MCC comparison
-ax1.hlines(y=np.mean(phicoef_seg), xmin=0, xmax=1, ls='--', alpha=0.5, color='tab:blue')
-ax1.hlines(y=np.mean(phicoef_sp), xmin=0, xmax=1, ls='--', alpha=0.5, color='tab:orange')
-new_x = np.linspace(xfrac.min(), xfrac.max(), 100)
-f1 = np.poly1d(np.polyfit(xfrac, phicoef_seg, 10))
-ax1.plot(new_x, f1(new_x), label='SegUnet', color='tab:blue')
-f2 = np.poly1d(np.polyfit(xfrac, phicoef_sp, 10))
-ax1.plot(new_x, f2(new_x), label='Super-Pixel', color='tab:orange')
-ax1.set_xlim(xfrac.min()-0.02, xfrac.max()+0.02), ax1.set_xlabel(r'$x_i$')
-ax1.set_ylim(-0.02, 1.02), ax1.set_ylabel(r'$r_{\phi}$')
-ax1.legend(loc=4)
-plt.savefig('%sphi_coef.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
+    fig, (ax0, ax1) = plt.subplots(ncols=2, figsize=(20,8))
+    #ax0.hlines(y=np.mean(phicoef_seg), xmin=0, xmax=1, ls='--', alpha=0.5)
+    #ax0.fill_between(x=np.linspace(0, 1, 100), y1=np.mean(phicoef_seg)+np.std(phicoef_seg), y2=np.mean(phicoef_seg)-np.std(phicoef_seg), alpha=0.5, color='lightgray')
+    # MCC SegUnet
+    cm = matplotlib.cm.plasma
+    sc = ax0.scatter(xfrac, phicoef_seg, c=redshift, vmin=7, vmax=9, s=25, cmap=cm, marker='.')
+    norm = matplotlib.colors.Normalize(vmin=7, vmax=9, clip=True)
+    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cm)
+    redshift_color = np.array([(mapper.to_rgba(v)) for v in redshift])
+    for x, y, e, clr in zip(xfrac, phicoef_seg, phicoef_seg_err, redshift_color):
+        ax0.errorbar(x, y, e, lw=1, marker='o', capsize=3, color=clr)
+    ax0.set_xlim(xfrac.min()-0.02, xfrac.max()+0.02), ax0.set_xlabel(r'$x_i$')
+    ax0.set_ylim(-0.02, 1.02), ax0.set_ylabel(r'$r_{\phi}$')
+    fig.colorbar(sc, ax=ax0, pad=0.01, label=r'$z$')
+    ax2 = ax0.twinx()
+    ax2.hist(xfrac, np.linspace(0.09, 0.81, 15), density=True, histtype='step', color='tab:blue', alpha=0.5)
+    ax2.axes.get_yaxis().set_visible(False)
+    # MCC comparison
+    ax1.hlines(y=np.mean(phicoef_seg), xmin=0, xmax=1, ls='--', alpha=0.5, color='tab:blue')
+    ax1.hlines(y=np.mean(phicoef_sp), xmin=0, xmax=1, ls='--', alpha=0.5, color='tab:orange')
+    new_x = np.linspace(xfrac.min(), xfrac.max(), 100)
+    f1 = np.poly1d(np.polyfit(xfrac, phicoef_seg, 10))
+    ax1.plot(new_x, f1(new_x), label='SegUnet', color='tab:blue')
+    f2 = np.poly1d(np.polyfit(xfrac, phicoef_sp, 10))
+    ax1.plot(new_x, f2(new_x), label='Super-Pixel', color='tab:orange')
+    ax1.set_xlim(xfrac.min()-0.02, xfrac.max()+0.02), ax1.set_xlabel(r'$x_i$')
+    ax1.set_ylim(-0.02, 1.02), ax1.set_ylabel(r'$r_{\phi}$')
+    ax1.legend(loc=4)
+    plt.savefig('%sphi_coef.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
 
-# Plot correlation
-fig, (ax0, ax1) = plt.subplots(ncols=2)
-ax0.plot(xn_mask_true, xn_mask_true, 'k--')
-cm = matplotlib.cm.plasma
-sc = ax0.scatter(xn_mask_true, xn_seg, c=redshift, vmin=7, vmax=9, s=25, cmap=cm, marker='.')
-norm = matplotlib.colors.Normalize(vmin=7, vmax=9, clip=True)
-mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap='plasma')
-redshift_color = np.array([(mapper.to_rgba(v)) for v in redshift])
-for x, y, e, clr in zip(xn_mask_true, xn_seg, xn_seg_err, redshift_color):
-    ax0.errorbar(x, y, e, lw=1, marker='o', capsize=3, color=clr)
-ax0.set_xlim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax0.set_xlabel(r'$\rm x_{n,\,true}$')
-ax0.set_ylim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax0.set_ylabel(r'$\rm x_{n,\,predict}$')
-fig.colorbar(sc, ax=ax0, pad=0.01, label=r'$z$')
+    # Plot correlation
+    fig, (ax0, ax1) = plt.subplots(ncols=2)
+    ax0.plot(xn_mask_true, xn_mask_true, 'k--')
+    cm = matplotlib.cm.plasma
+    sc = ax0.scatter(xn_mask_true, xn_seg, c=redshift, vmin=7, vmax=9, s=25, cmap=cm, marker='.')
+    norm = matplotlib.colors.Normalize(vmin=7, vmax=9, clip=True)
+    mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap='plasma')
+    redshift_color = np.array([(mapper.to_rgba(v)) for v in redshift])
+    for x, y, e, clr in zip(xn_mask_true, xn_seg, xn_seg_err, redshift_color):
+        ax0.errorbar(x, y, e, lw=1, marker='o', capsize=3, color=clr)
+    ax0.set_xlim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax0.set_xlabel(r'$\rm x_{n,\,true}$')
+    ax0.set_ylim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax0.set_ylabel(r'$\rm x_{n,\,predict}$')
+    fig.colorbar(sc, ax=ax0, pad=0.01, label=r'$z$')
 
-ax1.plot(xn_mask_true, xn_mask_true, 'k--', label='Ground True')
-ax1.scatter(xn_mask_true, xn_seg, color='tab:blue', marker='o', label='SegUnet')
-ax1.scatter(xn_mask_true, xn_sp, color='tab:orange', marker='o', label='Super-Pixel')
-ax1.set_xlim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_xlabel(r'$\rm x_{n,\,true}$')
-ax1.set_ylim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_ylabel(r'$\rm x_{n,\,predict}$')
-plt.legend(loc=4)
-plt.savefig('%scorr.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
+    ax1.plot(xn_mask_true, xn_mask_true, 'k--', label='Ground True')
+    ax1.scatter(xn_mask_true, xn_seg, color='tab:blue', marker='o', label='SegUnet')
+    ax1.scatter(xn_mask_true, xn_sp, color='tab:orange', marker='o', label='Super-Pixel')
+    ax1.set_xlim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_xlabel(r'$\rm x_{n,\,true}$')
+    ax1.set_ylim(xn_mask_true.min()-0.02, xn_mask_true.max()+0.02), ax1.set_ylabel(r'$\rm x_{n,\,predict}$')
+    plt.legend(loc=4)
+    plt.savefig('%scorr.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
 
 
-# Betti numbers plot
-fig, (ax0, ax1, ax2) = plt.subplots(ncols=3, figsize=(23,5), sharex=True)
-h = np.histogram(xn_mask_true, np.linspace(1e-5, 1., 20), density=True)
-new_x = h[1][:-1]+0.5*(h[1][1:]-h[1][:-1])
-# Betti 0
-f_b0_true = np.array([np.mean(b0_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax0.plot(new_x, f_b0_true, 'k--', label='Ground True')
-f_b0_seg = np.array([np.mean(b0_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax0.plot(new_x, f_b0_seg, label='SegUnet', color='tab:blue', marker='o')
-f_b0_sp = np.array([np.mean(b0_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax0.plot(new_x, f_b0_sp, label='Super-Pixel', color='tab:orange', marker='o')
-ax0.legend(loc=1)
-ax0.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax0.set_ylabel(r'$\rm\beta_0$', size=20)
-# Betti 1
-f_b1_true = np.array([np.mean(b1_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax1.plot(new_x, f_b1_true, 'k--', label='Ground True')
-f_b1_seg = np.array([np.mean(b1_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax1.plot(new_x, f_b1_seg, label='SegUnet', color='tab:blue', marker='o')
-f_b1_sp = np.array([np.mean(b1_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax1.plot(new_x, f_b1_sp, label='Super-Pixel', color='tab:orange', marker='o')
-ax1.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax1.set_ylabel(r'$\rm\beta_1$', size=20)
-# Betti 2
-f_b2_true = np.array([np.mean(b2_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax2.plot(new_x, f_b2_true, 'k--', label='Ground True')
-f_b2_seg = np.array([np.mean(b2_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax2.plot(new_x, f_b2_seg, label='SegUnet', color='tab:blue', marker='o')
-f_b2_sp = np.array([np.mean(b2_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
-ax2.plot(new_x, f_b2_sp, label='Super-Pixel', color='tab:orange', marker='o')
-ax2.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax2.set_ylabel(r'$\rm\beta_2$', size=20)
+    # Betti numbers plot
+    fig, (ax0, ax1, ax2) = plt.subplots(ncols=3, figsize=(23,5), sharex=True)
+    h = np.histogram(xn_mask_true, np.linspace(1e-5, 1., 20), density=True)
+    new_x = h[1][:-1]+0.5*(h[1][1:]-h[1][:-1])
+    # Betti 0
+    f_b0_true = np.array([np.mean(b0_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax0.plot(new_x, f_b0_true, 'k--', label='Ground True')
+    f_b0_seg = np.array([np.mean(b0_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax0.plot(new_x, f_b0_seg, label='SegUnet', color='tab:blue', marker='o')
+    f_b0_sp = np.array([np.mean(b0_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax0.plot(new_x, f_b0_sp, label='Super-Pixel', color='tab:orange', marker='o')
+    ax0.legend(loc=1)
+    ax0.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax0.set_ylabel(r'$\rm\beta_0$', size=20)
+    # Betti 1
+    f_b1_true = np.array([np.mean(b1_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax1.plot(new_x, f_b1_true, 'k--', label='Ground True')
+    f_b1_seg = np.array([np.mean(b1_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax1.plot(new_x, f_b1_seg, label='SegUnet', color='tab:blue', marker='o')
+    f_b1_sp = np.array([np.mean(b1_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax1.plot(new_x, f_b1_sp, label='Super-Pixel', color='tab:orange', marker='o')
+    ax1.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax1.set_ylabel(r'$\rm\beta_1$', size=20)
+    # Betti 2
+    f_b2_true = np.array([np.mean(b2_true[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax2.plot(new_x, f_b2_true, 'k--', label='Ground True')
+    f_b2_seg = np.array([np.mean(b2_seg[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax2.plot(new_x, f_b2_seg, label='SegUnet', color='tab:blue', marker='o')
+    f_b2_sp = np.array([np.mean(b2_sp[(xn_mask_true < h[1][i+1]) * (xn_mask_true >= h[1][i])]) for i in range(h[1].size-1)])
+    ax2.plot(new_x, f_b2_sp, label='Super-Pixel', color='tab:orange', marker='o')
+    ax2.set_xlabel(r'$\rm x^v_{HI}$', size=20), ax2.set_ylabel(r'$\rm\beta_2$', size=20)
 
-plt.subplots_adjust(hspace=0.0)
-plt.savefig('%sbetti.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
+    plt.subplots_adjust(hspace=0.0)
+    plt.savefig('%sbetti.png' %PATH_OUT, bbox_inches="tight"), plt.clf()
+
+t2c.save_cbin('%sdata/lc_pred.dat' %PATH_OUT, xn_seg)
 
 print('... done.')
