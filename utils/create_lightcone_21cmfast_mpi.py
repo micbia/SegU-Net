@@ -23,6 +23,8 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 nprocs = comm.Get_size()
 
+print(' Starting rank %d at: %s' %(rank, datetime.now().strftime('%H:%M:%S')))
+
 # 21cmFAST parameters
 uvfile = '/cosma6/data/dp004/dc-bian1/uvmap_128_z7-20.pkl'
 params = {'HII_DIM':128, 'DIM':512, 'BOX_LEN':256} 
@@ -31,16 +33,16 @@ z_min, z_max = 7, 11
 tobs = 1000.
 MAKE_PLOT = False
 
-#path_chache = '/cosma6/data/dp004/dc-bian1/21cmFAST-cache/'
-path_chache = '/cosma6/data/dp004/dc-bian1/_cache%d/' %rank
-p2c.config['direc'] = path_chache
+#path_cache = '/cosma6/data/dp004/dc-bian1/21cmFAST-cache/'
+path_cache = '/cosma6/data/dp004/dc-bian1/_cache%d/' %rank
+p2c.config['direc'] = path_cache
 
-if not (os.path.exists(path_chache)):
-    os.makedirs(path_chache)
+if not (os.path.exists(path_cache)):
+    os.makedirs(path_cache)
 else:
-    os.system('rm %s*h5' %path_chache)
+    os.system('rm %s*h5' %path_cache)
 
-loop_start, loop_end = 0, 10000
+loop_start, loop_end = 0, 1500
 #loop_start, loop_end = np.loadtxt('parameters/todo_r%d.txt' %arr_idx, dtype=int)
 perrank = (loop_end-loop_start)//nprocs
 
@@ -105,7 +107,7 @@ while i < i_end:
 
     # Create 21cmFast cube
     try:
-        os.system('rm %s*h5' %path_chache)
+        os.system('rm %s*h5' %path_cache)
     except:
         pass
 
@@ -115,7 +117,7 @@ while i < i_end:
                                   lightcone_quantities=("brightness_temp", 'xH_box'), 
                                   #flag_options={"USE_TS_FLUCT": True},
                                   global_quantities=("brightness_temp", 'xH_box'), 
-                                  direc=path_chache, random_seed=rseed) 
+                                  direc=path_cache, random_seed=rseed) 
     
     lc_noise = t2c.noise_lightcone(ncells=lightcone.brightness_temp.shape[0], 
                                    zs=lightcone.lightcone_redshifts, 
@@ -146,6 +148,7 @@ while i < i_end:
         else:
             f.write('%d\t%.3f\t%.3f\t%.3f\t%d\n' %(i, eff_fact, Rmfp, Tvir, rseed))
 
+    
     # if output dir is more than 15 GB of size, compress and remove files in data/
     if(get_dir_size(path_out) / 1e9 >= 15):
         comm.Barrier()  # wait that all proc are done
@@ -156,8 +159,8 @@ while i < i_end:
                 strd = np.loadtxt('%swritten.txt' %(path_out), dtype=str, delimiter='\n')
             except:
                 strd = np.array([])
-                #os.makedirs(path_out+'tar')    # TODO: save compressed file to a specific directory
 
+            # compress data
             os.system('tar -czvf %s_part%d.tar.gz %s' %(path_out+'../'+path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1, path_out))
             
             np.savetxt('%swritten.txt' %(path_out), np.append(strd, ['%s written %s_part%d.tar.gz' %(datetime.now().strftime('%d/%m/%Y %H:%M:%S'), path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1)]), delimiter='\n', fmt='%s')
@@ -166,11 +169,14 @@ while i < i_end:
             os.system('rm %sdata/*.bin' %path_out)  # delete uncompressed data
 
         comm.Barrier()  # wait for deletion to be completed
-    # update while loop index
-    i += 1
+    i += 1 # update while loop index
 
-
+# wait that all processors are done before concluding the job
+comm.Barrier()
+#nr_procs_done = 1
+#nr_procs_done = comm.gather(nr_procs_done, root=0)
 if(rank == 0):
+    print(' Gather done:\t%s\n' %datetime.now().strftime('%H:%M:%S'))
     # merge the different astro_params_rank*.txt files into one
     for i_p in range(nprocs):
         data = np.loadtxt('%sastro_params_rank%d.txt' %(path_out+'parameters/', i_p))
@@ -178,22 +184,22 @@ if(rank == 0):
             stack_data = data 
         else: 
             stack_data = np.vstack((stack_data, data)) 
-    np.savetxt('%sastro_params.txt' %(path_out+'parameters/'), stack_data, header='HII_EFF_FACTOR: The ionizing efficiency of high-z galaxies\nR_BUBBLE_MAX: Mean free path in Mpc of ionizing photons within ionizing regions\nION_Tvir_MIN: Minimum virial Temperature of star-forming haloes in log10 units\ni\tz\teff_f\tRmfp\tTvir\tx_n', fmt='%d\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f')
+    np.savetxt('%sastro_params.txt' %(path_out+'parameters/'), stack_data, header='HII_EFF_FACTOR: The ionizing efficiency of high-z galaxies\nR_BUBBLE_MAX: Mean free path in Mpc of ionizing photons within ionizing regions\nION_Tvir_MIN: Minimum virial Temperature of star-forming haloes in log10 units\ni\teff_f\tRmfp\tTvir\tseed', fmt='%d\t%.3f\t%.3f\t%.3f\t%d')
 
     # compres remaining data
     try:
         strd = np.loadtxt('%swritten.txt' %(path_out), dtype=str, delimiter='\n')
     except:
         strd = np.array([])
-        #os.makedirs(path_out+'tar')    # TODO: save compressed file to a specific directory
 
     os.system('tar -czvf %s_part%d.tar.gz %s' %(path_out+'../'+path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1, path_out))
-    
     np.savetxt('%swritten.txt' %(path_out), np.append(strd, ['%s written %s_part%d.tar.gz' %(datetime.now().strftime('%d/%m/%Y %H:%M:%S'), path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1)]), delimiter='\n', fmt='%s')
-    print(' \n Data created exeed 15GB. Compression completed...')
-
-    os.system('rm %sdata/*.bin' %path_out)  # delete uncompressed data
+    #os.system('rm %sdata/*.bin' %path_out)  # delete uncompressed data
     os.system('mv %s../*tar.gz %sdata/' %(path_out, path_out))
-comm.Barrier()
 
-print('... rank %d done.' %rank)
+# all ranks wait that rank=0 is done
+comm.Barrier() 
+
+# remove ranks cache directories
+os.system('rm -r %s' %path_cache)
+print('... rank %d done at %s.' %(rank, datetime.now().strftime('%H:%M:%S')))

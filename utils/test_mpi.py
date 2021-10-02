@@ -11,21 +11,39 @@ redshift = np.arange(7.001, 7.021, 0.001)
 resume_step = 0
 perrank = redshift.size//nprocs
 
+"""
+# Broadcasting a variable
 if(rank == 0):
-	print('Start test_mpi.py:\t%s\n' %(datetime.now().strftime('%H:%M:%S')))
-
-comm.Barrier()
-if(rank == 0):
-	time.sleep(10)
-	print(' rank %d start:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
-elif(rank == 1): 
-	time.sleep(5)
-	print(' rank %d start:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
+	nr_procs_done = 0
 else:
-	print(' rank %d start:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
+    nr_procs_done = None
+
+nr_procs_done = comm.bcast(nr_procs_done, root=0)
+
+"""
+comm.Barrier()
+if(rank == 0):
+	time.sleep(30)
+	print(' rank %d done:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
+elif(rank == 1): 
+	time.sleep(22)
+	print(' rank %d done:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
+elif(rank == 2):
+	time.sleep(18)
+	print(' rank %d done:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
+elif(rank == 3):
+	time.sleep(10)
+	print(' rank %d done:\t%s' %(rank, datetime.now().strftime('%H:%M:%S')))
+
+nr_procs_done = 1
+nr_procs_done = comm.gather(nr_procs_done, root=0)
+if(rank == 0):
+	print(' gather done:\t%s\t%s' %(datetime.now().strftime('%H:%M:%S'), str(nr_procs_done)))
 
 comm.Barrier()
-print(' rank %d end:\t%s\n' %(rank, datetime.now().strftime('%H:%M:%S')))
+
+
+
 
 """
 if(rank == 0):

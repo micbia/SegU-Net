@@ -12,7 +12,7 @@ from sklearn.metrics import matthews_corrcoef
 from keras.utils import multi_gpu_model
 
 from config.net_config import NetworkConfig
-from utils_network.networks import Unet
+from utils_network.networks import Unet, LSTM_Unet
 from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
 from utils_network.data_generator import RotateGenerator, DataGenerator
@@ -30,7 +30,7 @@ with open('utils_network/avail_metrics.pkl', 'rb') as data:
     avail_metrics = pickle.loads(data.read())
 
 # --------------------- NETWORK & RESUME OPTIONS ---------------------
-RANDOM_SEED = 2020
+RANDOM_SEED = 2021
 BATCH_SIZE = conf.batch_size
 DATA_AUGMENTATION = conf.augment
 IM_SHAPE = conf.img_shape
@@ -43,8 +43,13 @@ OPTIMIZER = Adam(lr=conf.learn_rate)
 METRICS = [avail_metrics[m] for m in conf.metrics]
 RECOMPILE = conf.recomplile
 GPU = conf.gpus
-PATH_TRAIN = conf.path+conf.train_data
-PATH_DATASET = conf.path
+IO_PATH = conf.io_path
+if isinstance(DATASET_PATH, list):
+    PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path[0]
+    PATH_VALID = IO_PATH+'inputs/'+conf.dataset_path[1]
+else:
+    PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path
+    PATH_VALID = PATH_TRAIN
 BEST_EPOCH = conf.best_epoch
 # if you want to restart from the previous best model set RESUME_EPOCH = BEST_EPOCH
 RESUME_EPOCH = conf.resume_epoch
@@ -56,11 +61,11 @@ if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
     RESUME_MODEL = '%smodel-sem21cm_ep%d.h5' %(RESUME_PATH+'checkpoints/', BEST_EPOCH)
     RESUME_LR = np.loadtxt(glob(RESUME_PATH+'outputs/lr_ep-*.txt')[0])[RESUME_EPOCH-1]
 else:
-    RESUME_MODEL = './dummy'
+    RESUME_MODEL = './foo'
     if(len(IM_SHAPE) == 3):
-        PATH_OUT = '%s/outputs/%s_%dcube/' %(PATH_DATASET, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
+        PATH_OUT = '%soutputs/%s_%dcube/' %(IO_PATH, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
     elif(len(IM_SHAPE) == 2):
-        PATH_OUT = '%s/outputs/%s_%dslice/' %(PATH_DATASET, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
+        PATH_OUT = '%soutputs/%s_%dslice/' %(IO_PATH, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
     else:
         print('!!! Wrong data dimension !!!')
     os.makedirs(PATH_OUT)
@@ -79,13 +84,13 @@ os.system('cp -r config %s/source' %PATH_OUT)
 os.system('cp %s %s' %(config_file, PATH_OUT))
 
 # Load data
-if(DATA_AUGMENTATION != 'NOISESMT'):
+if(DATA_AUGMENTATION == None):
     if isinstance(PATH_TRAIN, (list, np.ndarray)):
         print('Load images ...') 
-        X_train, y_train = get_data(PATH_TRAIN[0]+'data/', IM_SHAPE, shuffle=True)
+        X_train, y_train = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
         size_train_dataset = X_train.shape[0]
         print('Load masks ...') 
-        X_valid, y_valid = get_data(PATH_TRAIN[1]+'data/', IM_SHAPE, shuffle=True)
+        X_valid, y_valid = get_data(PATH_VALID+'data/', IM_SHAPE, shuffle=True)
         size_valid_dataset = X_valid.shape[0]
     else:
         print('Load dataset ...') 
@@ -94,12 +99,12 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
         X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
         size_train_dataset = X_train.shape[0]
-else:
+elif(DATA_AUGMENTATION == 'NOISESMT'):
     print('Data will ber extracted in batches...')
     test_size, datasize = 0.15, 10000 
     train_idx = np.arange(0, datasize*(1-test_size), dtype=int)
     size_train_dataset = train_idx.size
-    test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)     
+    test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
 
 # Define model or load model
 if(os.path.exists(RESUME_MODEL)):

@@ -31,12 +31,10 @@ class NetworkConfig:
         self.recomplile     = eval(trainconfig['RECOMP'])
         self.gpus           = eval(trainconfig['GPUS'])
         if(', ' in trainconfig['DATASET_PATH']):
-            self.path       = trainconfig['DATASET_PATH'].split(', ')
+            self.dataset_path       = trainconfig['DATASET_PATH'].split(', ')
         else:
-            self.path       = trainconfig['DATASET_PATH']
-
-        self.train_data = trainconfig['TRAIN_DATA']
-        self.pred_data = trainconfig['PRED_DATA']
+            self.dataset_path       = trainconfig['DATASET_PATH']
+        self.io_path        = trainconfig['IO_PATH']
         
         try:
             resumeconfig = config['RESUME']

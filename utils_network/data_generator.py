@@ -4,10 +4,12 @@ from datetime import datetime
 from glob import glob
 from keras.utils import Sequence
 from tqdm import tqdm
-'''
+
 class LC_DataGenerator(Sequence):
     """
-    Data generator of lightcone data (calculate noise lc and smooth data).
+    Data generator of lightcone data.
+
+    Michele, 21 Sep 2021: up to date the class deal with LC data that are already smoothed and calculated the noise
     """
     def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False,
                  data_shape=None, tobs=1000, uvfile='/cosma6/data/dp004/dc-bian1/uvmap_128_z7-20.pkl'):
@@ -28,22 +30,18 @@ class LC_DataGenerator(Sequence):
         self.data_size = len(self.indexes)
         self.on_epoch_end()
 
-        self.astro_par = np.loadtxt('%sastro_params.txt' %self.path, unpack=True))
+        self.astro_par = np.loadtxt('%sastro_params.txt' %self.path, unpack=True)
         with open(self.path+'user_params.txt','r') as f:
             self.user_par = eval(f.read())
-
-
 
     def __len__(self):
         # number of batches
         return int(np.floor(self.data_size//self.batch_size))
 
-
     def on_epoch_end(self):
         # Updates indexes after each epoch
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
-
 
     def __getitem__(self, index):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
@@ -52,19 +50,45 @@ class LC_DataGenerator(Sequence):
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
 
         for i, idx in enumerate(indexes):
-            dT = t2c.read_cbin('%sdata/dT1_21cm_i%d.bin' %(self.path, idx))
-            xH = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(self.path, idx))
-            os.system('rm -r %s/' %var[:-4])  
+            if(self.zipf):
+                if(len(self.data_shape) == 3):
+                    for var in glob('%s*part*.zip' %self.path):
+                        try:
+                            with zipfile.ZipFile(var, 'r') as myzip:
+                                # for consistency we keep the same nomenclature as in the case of coeval cube, but these inputs should be dT and xH derived from LCs
+                                f = myzip.extract(member='%s/data/dT1_21cm_i%d.bin' %(var[var[:-5].rfind('/')+1:-4], idx), path=self.path)
+                                dT = t2c.read_cbin(f) 
+                                f = myzip.extract(member='%s/data/xH_21cm_i%d.bin' %(var[var[:-5].rfind('/')+1:-4], idx), path=self.path)
+                                xH = t2c.read_cbin(f) 
+                                os.system('rm -r %s/' %var[:-4])  
+                                break
+                        except:
+                            pass
+                elif(len(self.data_shape) == 2):
+                    with zipfile.ZipFile(self.path, 'r') as myzip:
+                        dT = np.load(myzip.open('%s/data/image_21cm_i%d.npy' %(self.path[self.path[:-5].rfind('/')+1:-4], i)))
+                        xH = np.load(myzip.open('%s/data/mask_21cm_i%d.npy' %(self.path[self.path[:-5].rfind('/')+1:-4], i)))
+            else:
+                dT = t2c.read_cbin('%sdata/dT1_21cm_i%d.bin' %(self.path, idx))
+                xH = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(self.path, idx))
         
             #X[i] = self._noise_smt_dT(dT1=dT, idx=idx)
             #y[i] = self._smt_xH(xH_box=xH, idx=idx)
+            rseed2 = random.randint(0, 552)
+            X[i] = dT[:,:,rseed2]
+            y[i] = xH[:,:,rseed2]
+
+        X = X[..., np.newaxis]
+        y = y[..., np.newaxis]
         
+        return X, y
         X = X[..., np.newaxis]
         y = y[..., np.newaxis]
         
         return X, y
 
 
+    """ TODO: smoothing for LC data
     def _lc_noise_smt_dT(self, lc1, idx):
         assert idx == self.astro_par[0,idx]
         z = self.astro_par[1, idx]
@@ -107,7 +131,6 @@ class LC_DataGenerator(Sequence):
 
         return dT3
 
-
     def _lc_smt_xH(self, xH_box, idx):
         assert idx == self.astro_par[0,idx]
         z = self.astro_par[1, idx]
@@ -116,8 +139,9 @@ class LC_DataGenerator(Sequence):
         mask_xn = smt_xn>0.5
 
         return mask_xn.astype(int)
+    """
 
-'''
+
 class DataGenerator(Sequence):
     """
     Data generator of 3D data (calculate noise cube and smooth data).

@@ -1,12 +1,12 @@
 #!/bin/sh
 #SBATCH --job-name=test
-#SBATCH --nodes 2
-#SBATCH --ntasks-per-node 2
+#SBATCH --nodes 1
+#SBATCH --ntasks-per-node 4
 
 #SBATCH --exclusive
 #SBATCH --account=dp004
 #SBATCH --partition=cosma6
-#SBATCH --time=00:00:30
+#SBATCH --time=00:00:40
 
 #SBATCH --output=../logs/test-out.%j
 #SBATCH --error=../logs/test-err.%j
