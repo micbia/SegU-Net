@@ -74,7 +74,7 @@ class LightConeGenerator(Sequence):
         
             #X[i] = self._noise_smt_dT(dT1=dT, idx=idx)
             #y[i] = self._smt_xH(xH_box=xH, idx=idx)
-            rseed2 = random.randint(0, 552)
+            rseed2 = random.randint(0, dT.shape[-1])
             X[i] = dT[:,:,rseed2]
             y[i] = xH[:,:,rseed2]
 

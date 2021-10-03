@@ -50,6 +50,7 @@ if isinstance(DATASET_PATH, list):
 else:
     PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path
     PATH_VALID = PATH_TRAIN
+ZIPFILE = ('tar.gz' in glob(PATH_TRAIN+'data/*tar.gz')[0] and 'tar.gz' in glob(PATH_VALID+'data/*tar.gz')[0])
 BEST_EPOCH = conf.best_epoch
 # if you want to restart from the previous best model set RESUME_EPOCH = BEST_EPOCH
 RESUME_EPOCH = conf.resume_epoch
@@ -85,7 +86,7 @@ os.system('cp %s %s' %(config_file, PATH_OUT))
 
 # Load data
 if not isinstance(DATA_AUGMENTATION, str):
-    if isinstance(PATH_TRAIN, (list, np.ndarray)):
+    if isinstance(DATASET_PATH, (list, np.ndarray)):
         print('Load images ...') 
         X_train, y_train = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
         size_train_dataset = X_train.shape[0]
@@ -99,12 +100,18 @@ if not isinstance(DATA_AUGMENTATION, str):
         X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
         size_train_dataset = X_train.shape[0]
-elif(DATA_AUGMENTATION == 'NOISESMT'):
-    print('Data will ber extracted in batches...')
-    test_size, datasize = 0.15, 10000 
-    train_idx = np.arange(0, datasize*(1-test_size), dtype=int)
-    size_train_dataset = train_idx.size
-    test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
+else:
+    if isinstance(DATASET_PATH, (list, np.ndarray)):
+        print('Data will ber extracted in batches...')
+        size_train_dataset, size_valid_dataset = 10000, 1500
+        train_idx = np.arange(0, size_train_dataset, dtype=int)
+        test_idx = np.arange(0, size_valid_dataset, dtype=int)
+    else:
+        print('Data will ber extracted in batches...')
+        test_size, datasize = 0.15, 10000
+        train_idx = np.arange(0, datasize*(1-test_size), dtype=int)
+        size_train_dataset = train_idx.size
+        test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
 
 # Define model or load model
 if(os.path.exists(RESUME_MODEL)):
@@ -140,6 +147,7 @@ else:
     print('\nModel created')
     if(GPU == None or GPU == 0):
         model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
+        #model = LSTM_Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
     else:
         print('\nModel on GPU\n')
         config = tf.ConfigProto()
@@ -158,7 +166,7 @@ callbacks = [EarlyStopping(patience=21, verbose=1),
              SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=resume_loss),
              HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]
 
-
+# model fit
 if not isinstance(DATA_AUGMENTATION, str):
     results = model.fit(x=X_train, y=y_train,
                         batch_size=BATCH_SIZE, 
@@ -176,14 +184,12 @@ else:
                                         rotate_axis='random', rotate_angle='random', shuffle=True)
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
-        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
     elif(DATA_AUGMENTATION == 'LC'):
         print('\nData augmentation: Create LC data with noise cone and smooth...\n')
-        uvfile = '/home/michele/Documents/PhD_Sussex/output/ML/dataset/inputs/uvmap_128_z7-20.pkl'
-        train_generator = LightConeGenerator(uvpath=uvfile, z_min=7., tobs=1000)
-        #valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=True, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-
+        train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),
