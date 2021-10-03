@@ -5,7 +5,7 @@ from glob import glob
 from keras.utils import Sequence
 from tqdm import tqdm
 
-class LC_DataGenerator(Sequence):
+class LightConeGenerator(Sequence):
     """
     Data generator of lightcone data.
 

@@ -15,7 +15,7 @@ from config.net_config import NetworkConfig
 from utils_network.networks import Unet, LSTM_Unet
 from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
-from utils_network.data_generator import RotateGenerator, DataGenerator
+from utils_network.data_generator import RotateGenerator, DataGenerator, LightConeGenerator
 from utils.other_utils import get_data, get_data_lc, get_batch, save_cbin
 from utils_plot.plotting import plot_loss
 
@@ -84,7 +84,7 @@ os.system('cp -r config %s/source' %PATH_OUT)
 os.system('cp %s %s' %(config_file, PATH_OUT))
 
 # Load data
-if(DATA_AUGMENTATION == None):
+if not isinstance(DATA_AUGMENTATION, str):
     if isinstance(PATH_TRAIN, (list, np.ndarray)):
         print('Load images ...') 
         X_train, y_train = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
@@ -152,14 +152,14 @@ else:
     resume_loss = None
     model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
-
+# define callbacks
 callbacks = [EarlyStopping(patience=21, verbose=1),
              ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH), best=resume_loss),
              SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=resume_loss),
              HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]
 
 
-if (type(DATA_AUGMENTATION) != str):
+if not isinstance(DATA_AUGMENTATION, str):
     results = model.fit(x=X_train, y=y_train,
                         batch_size=BATCH_SIZE, 
                         epochs=EPOCHS,
