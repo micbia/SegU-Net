@@ -22,5 +22,4 @@ module load fftw/3.3.8
 # python env
 module load pythonconda3/2020-02
 
-python segUNet.py config/net2D_lc_dT.ini
-#python segUNet.py config/net2D_lc_full.ini
+python segUNet.py config/net_Unet_lc.ini

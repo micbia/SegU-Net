@@ -44,6 +44,7 @@ METRICS = [avail_metrics[m] for m in conf.metrics]
 RECOMPILE = conf.recomplile
 GPU = conf.gpus
 IO_PATH = conf.io_path
+DATASET_PATH = conf.dataset_path
 if isinstance(DATASET_PATH, list):
     PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path[0]
     PATH_VALID = IO_PATH+'inputs/'+conf.dataset_path[1]
