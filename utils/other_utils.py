@@ -1,8 +1,65 @@
-import numpy as np, matplotlib.pyplot as plt, random, operator
+import numpy as np, matplotlib.pyplot as plt, random, operator, os
 import zipfile
 from glob import glob
 from tqdm import tqdm
+from datetime import datetime 
+import time 
+ 
 
+class Timer: 
+    def __init__(self): 
+        self._start_time = None
+        self._prevlap_time = None
+ 
+    def start(self): 
+        """Start a new timer""" 
+        if(self._start_time != None): 
+            raise TimerError(f"Timer is running. Use .stop() to stop it") 
+        self._start_time = time.perf_counter()
+
+    def lap(self, mess=None): 
+        """Stop the timer, and report the elapsed time""" 
+        if(self._start_time == None): 
+            raise TimerError(f"Timer is not running. Use .start() to start it") 
+        lap_time = time.perf_counter()
+        if(self._prevlap_time != None):
+            elapsed_time = lap_time - self._prevlap_time
+        else:
+            elapsed_time = lap_time - self._start_time
+        self._prevlap_time = lap_time
+        mess = ' - '+mess if mess!=None else ''
+        print("Lap time: %.4f seconds%s" %(elapsed_time, mess)) 
+
+    def stop(self, mess=''): 
+        mess = ' - '+mess if mess!='' else mess
+        """Stop the timer, and report the elapsed time""" 
+        if(self._start_time == None): 
+            raise TimerError(f"Timer is not running. Use .start() to start it")
+        time_stop = time.perf_counter()
+        if(self._prevlap_time != None):
+            elapsed_time = time_stop - self._prevlap_time
+            print("Lap time: %.4f seconds - final lap" %(elapsed_time))
+        elapsed_time = time_stop - self._start_time
+        print("Elapsed time: %.4f seconds%s" %(elapsed_time, mess)) 
+        self._start_time = None
+
+class TimerError(Exception): 
+    """A custom exception used to report errors in use of Timer class""" 
+ 
+
+def GenerateSeed():
+    # create seed for 21cmFast  
+    seed = [var for var in datetime.now().strftime('%d%H%M%S')]
+    np.random.shuffle(seed)
+    return int(''.join(seed))
+
+
+def get_dir_size(dir):
+    """Returns the "dir" size in bytes."""
+    comd = os.popen('du -s %s' %dir).read()
+    total = float(comd[:comd.find('\t')])  / 1e6 # in GB units
+    return total
+    
 
 def OrderNdimArray(arr, idx_to_sort):
     ''' Order N-dim array giving the index of sorting

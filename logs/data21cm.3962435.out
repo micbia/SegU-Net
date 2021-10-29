@@ -1,0 +1,430 @@
+====
+Starting job 3962435 at Wed 27 Oct 16:40:49 BST 2021 for user dc-bian1.
+Running on nodes: m[6123,6242]
+====
+dataLC_128_train_060921/
+dataLC_128_train_060921/images/
+dataLC_128_train_060921/written.txt
+dataLC_128_train_060921/parameters/
+dataLC_128_train_060921/parameters/astro_params_rank6.txt
+dataLC_128_train_060921/parameters/astro_params.txt
+dataLC_128_train_060921/parameters/astro_params_rank4.txt
+dataLC_128_train_060921/parameters/astro_params_rank3.txt
+dataLC_128_train_060921/parameters/astro_params_rank0.txt
+dataLC_128_train_060921/parameters/astro_params_rank20.txt
+dataLC_128_train_060921/parameters/astro_params_rank9.txt
+dataLC_128_train_060921/parameters/astro_params_rank26.txt
+dataLC_128_train_060921/parameters/cosm_params.txt
+dataLC_128_train_060921/parameters/astro_params_rank2.txt
+dataLC_128_train_060921/parameters/astro_params_rank11.txt
+dataLC_128_train_060921/parameters/astro_params_rank13.txt
+dataLC_128_train_060921/parameters/astro_params_rank14.txt
+dataLC_128_train_060921/parameters/astro_params_rank10.txt
+dataLC_128_train_060921/parameters/astro_params_rank12.txt
+dataLC_128_train_060921/parameters/astro_params_rank8.txt
+dataLC_128_train_060921/parameters/astro_params_rank7.txt
+dataLC_128_train_060921/parameters/astro_params_rank24.txt
+dataLC_128_train_060921/parameters/astro_params_rank19.txt
+dataLC_128_train_060921/parameters/astro_params_rank25.txt
+dataLC_128_train_060921/parameters/astro_params_rank18.txt
+dataLC_128_train_060921/parameters/astro_params_rank15.txt
+dataLC_128_train_060921/parameters/user_params.txt
+dataLC_128_train_060921/parameters/astro_params_rank16.txt
+dataLC_128_train_060921/parameters/astro_params_rank21.txt
+dataLC_128_train_060921/parameters/astro_params_rank22.txt
+dataLC_128_train_060921/parameters/astro_params_rank28.txt
+dataLC_128_train_060921/parameters/astro_params_rank27.txt
+dataLC_128_train_060921/parameters/astro_params_rank17.txt
+dataLC_128_train_060921/parameters/astro_params_rank1.txt
+dataLC_128_train_060921/parameters/astro_params_rank23.txt
+dataLC_128_train_060921/parameters/astro_params_rank5.txt
+dataLC_128_train_060921/parameters/astro_params_rank29.txt
+dataLC_128_train_060921/lc_redshifts.txt
+dataLC_128_train_060921/data/
+dataLC_128_train_060921/data/xH_21cm_i5992.bin
+dataLC_128_train_060921/data/tar_content_part32.npy
+dataLC_128_train_060921/data/dT3_21cm_i5993.bin
+dataLC_128_train_060921/data/tar_names_part37.npy
+dataLC_128_train_060921/data/tar_names_part35.npy
+dataLC_128_train_060921/data/dT3_21cm_i2661.bin
+dataLC_128_train_060921/data/dT3_21cm_i2662.bin
+dataLC_128_train_060921/data/dT3_21cm_i329.bin
+dataLC_128_train_060921/data/tar_content_part8.npy
+dataLC_128_train_060921/data/xH_21cm_i9994.bin
+dataLC_128_train_060921/data/dT3_21cm_i3329.bin
+dataLC_128_train_060921/data/tar_names_part6.npy
+dataLC_128_train_060921/data/dT3_21cm_i7325.bin
+dataLC_128_train_060921/data/xH_21cm_i1664.bin
+dataLC_128_train_060921/data/tar_content_part40.npy
+dataLC_128_train_060921/data/dT3_21cm_i7323.bin
+dataLC_128_train_060921/data/xH_21cm_i5325.bin
+dataLC_128_train_060921/data/tar_names_part7.npy
+dataLC_128_train_060921/data/tar_names_part15.npy
+dataLC_128_train_060921/data/xH_21cm_i1662.bin
+dataLC_128_train_060921/data/dT3_21cm_i326.bin
+dataLC_128_train_060921/data/xH_21cm_i7322.bin
+dataLC_128_train_060921/data/tar_content_part22.npy
+dataLC_128_train_060921/data/tar_names_part18.npy
+dataLC_128_train_060921/data/tar_content_part33.npy
+dataLC_128_train_060921/data/xH_21cm_i328.bin
+dataLC_128_train_060921/data/tar_names_part24.npy
+dataLC_128_train_060921/data/xH_21cm_i5990.bin
+dataLC_128_train_060921/data/xH_21cm_i7324.bin
+dataLC_128_train_060921/data/content.txt
+dataLC_128_train_060921/data/dT3_21cm_i2663.bin
+dataLC_128_train_060921/data/dT3_21cm_i995.bin
+dataLC_128_train_060921/data/xH_21cm_i5660.bin
+dataLC_128_train_060921/data/dT3_21cm_i9998.bin
+dataLC_128_train_060921/data/dT3_21cm_i2659.bin
+dataLC_128_train_060921/data/xH_21cm_i9995.bin
+dataLC_128_train_060921/data/dT3_21cm_i992.bin
+dataLC_128_train_060921/data/tar_names_part3.npy
+dataLC_128_train_060921/data/xH_21cm_i4327.bin
+dataLC_128_train_060921/data/tar_content_part2.npy
+dataLC_128_train_060921/data/tar_content_part38.npy
+dataLC_128_train_060921/data/tar_content_part3.npy
+dataLC_128_train_060921/data/xH_21cm_i1327.bin
+dataLC_128_train_060921/data/dT3_21cm_i5659.bin
+dataLC_128_train_060921/data/dT3_21cm_i4327.bin
+dataLC_128_train_060921/data/dT3_21cm_i1664.bin
+dataLC_128_train_060921/data/dT3_21cm_i324.bin
+dataLC_128_train_060921/data/xH_21cm_i7658.bin
+dataLC_128_train_060921/data/dT3_21cm_i1328.bin
+dataLC_128_train_060921/data/dT3_21cm_i9996.bin
+dataLC_128_train_060921/data/dT3_21cm_i328.bin
+dataLC_128_train_060921/data/tar_content_part16.npy
+dataLC_128_train_060921/data/xH_21cm_i1993.bin
+dataLC_128_train_060921/data/dT3_21cm_i327.bin
+dataLC_128_train_060921/data/xH_21cm_i664.bin
+dataLC_128_train_060921/data/dT3_21cm_i330.bin
+dataLC_128_train_060921/data/xH_21cm_i995.bin
+dataLC_128_train_060921/data/tar_names_part10.npy
+dataLC_128_train_060921/data/dT3_21cm_i1991.bin
+dataLC_128_train_060921/data/xH_21cm_i3329.bin
+dataLC_128_train_060921/data/xH_21cm_i1331.bin
+dataLC_128_train_060921/data/tar_names_part23.npy
+dataLC_128_train_060921/data/tar_names_part11.npy
+dataLC_128_train_060921/data/tar_names_part17.npy
+dataLC_128_train_060921/data/xH_21cm_i6991.bin
+dataLC_128_train_060921/data/xH_21cm_i1992.bin
+dataLC_128_train_060921/data/dT3_21cm_i6992.bin
+dataLC_128_train_060921/data/dT3_21cm_i1992.bin
+dataLC_128_train_060921/data/tar_content_part39.npy
+dataLC_128_train_060921/data/tar_content_part7.npy
+dataLC_128_train_060921/data/xH_21cm_i5324.bin
+dataLC_128_train_060921/data/dT3_21cm_i1997.bin
+dataLC_128_train_060921/data/dT3_21cm_i997.bin
+dataLC_128_train_060921/data/tar_names_part40.npy
+dataLC_128_train_060921/data/tar_names_part21.npy
+dataLC_128_train_060921/data/dT3_21cm_i998.bin
+dataLC_128_train_060921/data/tar_content_part1.npy
+dataLC_128_train_060921/data/xH_21cm_i5991.bin
+dataLC_128_train_060921/data/dT3_21cm_i1996.bin
+dataLC_128_train_060921/data/tar_names_part20.npy
+dataLC_128_train_060921/data/tar_content_part23.npy
+dataLC_128_train_060921/data/xH_21cm_i1328.bin
+dataLC_128_train_060921/data/xH_21cm_i9996.bin
+dataLC_128_train_060921/data/xH_21cm_i6657.bin
+dataLC_128_train_060921/data/dT3_21cm_i1663.bin
+dataLC_128_train_060921/data/tar_names_part32.npy
+dataLC_128_train_060921/data/tar_names_part34.npy
+dataLC_128_train_060921/data/tar_content_part12.npy
+dataLC_128_train_060921/data/tar_names_part38.npy
+dataLC_128_train_060921/data/dT3_21cm_i1327.bin
+dataLC_128_train_060921/data/tar_names_part4.npy
+dataLC_128_train_060921/data/tar_names_part19.npy
+dataLC_128_train_060921/data/tar_content_part25.npy
+dataLC_128_train_060921/data/xH_21cm_i994.bin
+dataLC_128_train_060921/data/dT3_21cm_i325.bin
+dataLC_128_train_060921/data/tar_names_part14.npy
+dataLC_128_train_060921/data/dT3_21cm_i662.bin
+dataLC_128_train_060921/data/xH_21cm_i325.bin
+dataLC_128_train_060921/data/tar_names_part25.npy
+dataLC_128_train_060921/data/dT3_21cm_i9997.bin
+dataLC_128_train_060921/data/tar_content_part42.npy
+dataLC_128_train_060921/data/dT3_21cm_i1990.bin
+dataLC_128_train_060921/data/xH_21cm_i992.bin
+dataLC_128_train_060921/data/xH_21cm_i6992.bin
+dataLC_128_train_060921/data/tar_content_part14.npy
+dataLC_128_train_060921/data/xH_21cm_i1663.bin
+dataLC_128_train_060921/data/tar_content_part21.npy
+dataLC_128_train_060921/data/tar_content_part30.npy
+dataLC_128_train_060921/data/tar_content_part27.npy
+dataLC_128_train_060921/data/dT3_21cm_i7324.bin
+dataLC_128_train_060921/data/dT3_21cm_i1662.bin
+dataLC_128_train_060921/data/dT3_21cm_i2660.bin
+dataLC_128_train_060921/data/dT3_21cm_i996.bin
+dataLC_128_train_060921/data/tar_content_part20.npy
+dataLC_128_train_060921/data/dT3_21cm_i6658.bin
+dataLC_128_train_060921/data/xH_21cm_i1994.bin
+dataLC_128_train_060921/data/tar_names_part16.npy
+dataLC_128_train_060921/data/xH_21cm_i331.bin
+dataLC_128_train_060921/data/tar_names_part39.npy
+dataLC_128_train_060921/data/xH_21cm_i2661.bin
+dataLC_128_train_060921/data/dT3_21cm_i9999.bin
+dataLC_128_train_060921/data/tar_names_part42.npy
+dataLC_128_train_060921/data/tar_content_part11.npy
+dataLC_128_train_060921/data/xH_21cm_i4328.bin
+dataLC_128_train_060921/data/tar_content_part35.npy
+dataLC_128_train_060921/data/dT3_21cm_i9995.bin
+dataLC_128_train_060921/data/tar_names_part30.npy
+dataLC_128_train_060921/data/tar_content_part37.npy
+dataLC_128_train_060921/data/dT3_21cm_i332.bin
+dataLC_128_train_060921/data/xH_21cm_i1990.bin
+dataLC_128_train_060921/data/dT3_21cm_i1331.bin
+dataLC_128_train_060921/data/xH_21cm_i2662.bin
+dataLC_128_train_060921/data/dT3_21cm_i9994.bin
+dataLC_128_train_060921/data/dT3_21cm_i5326.bin
+dataLC_128_train_060921/data/tar_content_part36.npy
+dataLC_128_train_060921/data/tar_names_part29.npy
+dataLC_128_train_060921/data/dT3_21cm_i5660.bin
+dataLC_128_train_060921/data/tar_content_part13.npy
+dataLC_128_train_060921/data/xH_21cm_i7325.bin
+dataLC_128_train_060921/data/tar_content_part17.npy
+dataLC_128_train_060921/data/tar_content_part26.npy
+dataLC_128_train_060921/data/dT3_21cm_i5992.bin
+dataLC_128_train_060921/data/dT3_21cm_i6657.bin
+dataLC_128_train_060921/data/xH_21cm_i996.bin
+dataLC_128_train_060921/data/tar_names_part33.npy
+dataLC_128_train_060921/data/dT3_21cm_i5327.bin
+dataLC_128_train_060921/data/tar_content_part18.npy
+dataLC_128_train_060921/data/dT3_21cm_i5990.bin
+dataLC_128_train_060921/data/dT3_21cm_i1995.bin
+dataLC_128_train_060921/data/xH_21cm_i661.bin
+dataLC_128_train_060921/data/dT3_21cm_i7658.bin
+dataLC_128_train_060921/data/tar_names_part28.npy
+dataLC_128_train_060921/data/xH_21cm_i2663.bin
+dataLC_128_train_060921/data/dT3_21cm_i663.bin
+dataLC_128_train_060921/data/tar_names_part36.npy
+dataLC_128_train_060921/data/dT3_21cm_i993.bin
+dataLC_128_train_060921/data/tar_names_part22.npy
+dataLC_128_train_060921/data/xH_21cm_i1329.bin
+dataLC_128_train_060921/data/tar_content_part10.npy
+dataLC_128_train_060921/data/tar_content_part9.npy
+dataLC_128_train_060921/data/dT3_21cm_i5325.bin
+dataLC_128_train_060921/data/tar_content_part28.npy
+dataLC_128_train_060921/data/dT3_21cm_i4661.bin
+dataLC_128_train_060921/data/dT3_21cm_i6991.bin
+dataLC_128_train_060921/data/tar_content_part19.npy
+dataLC_128_train_060921/data/xH_21cm_i327.bin
+dataLC_128_train_060921/data/tar_names_part1.npy
+dataLC_128_train_060921/data/dT3_21cm_i661.bin
+dataLC_128_train_060921/data/xH_21cm_i9997.bin
+dataLC_128_train_060921/data/xH_21cm_i330.bin
+dataLC_128_train_060921/data/xH_21cm_i997.bin
+dataLC_128_train_060921/data/tar_names_part5.npy
+dataLC_128_train_060921/data/tar_content_part31.npy
+dataLC_128_train_060921/data/dT3_21cm_i1994.bin
+dataLC_128_train_060921/data/tar_content_part24.npy
+dataLC_128_train_060921/data/xH_21cm_i665.bin
+dataLC_128_train_060921/data/tar_content_part29.npy
+dataLC_128_train_060921/data/xH_21cm_i1991.bin
+dataLC_128_train_060921/data/dT3_21cm_i6659.bin
+dataLC_128_train_060921/data/xH_21cm_i2659.bin
+dataLC_128_train_060921/data/xH_21cm_i1330.bin
+dataLC_128_train_060921/data/tar_names_part31.npy
+dataLC_128_train_060921/data/tar_content_part6.npy
+dataLC_128_train_060921/data/dT3_21cm_i1993.bin
+dataLC_128_train_060921/data/tar_content_part4.npy
+dataLC_128_train_060921/data/tar_names_part8.npy
+dataLC_128_train_060921/data/xH_21cm_i1997.bin
+dataLC_128_train_060921/data/xH_21cm_i998.bin
+dataLC_128_train_060921/data/tar_content_part5.npy
+dataLC_128_train_060921/data/dT3_21cm_i331.bin
+dataLC_128_train_060921/data/tar_names_part13.npy
+dataLC_128_train_060921/data/xH_21cm_i7323.bin
+dataLC_128_train_060921/data/tar_names_part27.npy
+dataLC_128_train_060921/data/xH_21cm_i2660.bin
+dataLC_128_train_060921/data/xH_21cm_i6658.bin
+dataLC_128_train_060921/data/tar_content_part41.npy
+dataLC_128_train_060921/data/dT3_21cm_i5991.bin
+dataLC_128_train_060921/data/xH_21cm_i1995.bin
+dataLC_128_train_060921/data/xH_21cm_i4661.bin
+dataLC_128_train_060921/data/tar_names_part41.npy
+dataLC_128_train_060921/data/dT3_21cm_i3328.bin
+dataLC_128_train_060921/data/xH_21cm_i5326.bin
+dataLC_128_train_060921/data/xH_21cm_i5327.bin
+dataLC_128_train_060921/data/xH_21cm_i323.bin
+dataLC_128_train_060921/data/xH_21cm_i6659.bin
+dataLC_128_train_060921/data/dT3_21cm_i1329.bin
+dataLC_128_train_060921/data/dT3_21cm_i665.bin
+dataLC_128_train_060921/data/dT3_21cm_i2330.bin
+dataLC_128_train_060921/data/xH_21cm_i324.bin
+dataLC_128_train_060921/data/xH_21cm_i9999.bin
+dataLC_128_train_060921/data/tar_names_part12.npy
+dataLC_128_train_060921/data/xH_21cm_i329.bin
+dataLC_128_train_060921/data/dT3_21cm_i1330.bin
+dataLC_128_train_060921/data/xH_21cm_i326.bin
+dataLC_128_train_060921/data/xH_21cm_i662.bin
+dataLC_128_train_060921/data/tar_names_part9.npy
+dataLC_128_train_060921/data/xH_21cm_i1996.bin
+dataLC_128_train_060921/data/dT3_21cm_i994.bin
+dataLC_128_train_060921/data/dT3_21cm_i323.bin
+dataLC_128_train_060921/data/xH_21cm_i2330.bin
+dataLC_128_train_060921/data/tar_names_part2.npy
+dataLC_128_train_060921/data/xH_21cm_i3328.bin
+dataLC_128_train_060921/data/xH_21cm_i9998.bin
+dataLC_128_train_060921/data/xH_21cm_i5993.bin
+dataLC_128_train_060921/data/dT3_21cm_i664.bin
+dataLC_128_train_060921/data/tar_content_part34.npy
+dataLC_128_train_060921/data/dT3_21cm_i5324.bin
+dataLC_128_train_060921/data/dT3_21cm_i4328.bin
+dataLC_128_train_060921/data/tar_content_part15.npy
+dataLC_128_train_060921/data/dT3_21cm_i7322.bin
+dataLC_128_train_060921/data/xH_21cm_i663.bin
+dataLC_128_train_060921/data/xH_21cm_i332.bin
+dataLC_128_train_060921/data/xH_21cm_i993.bin
+dataLC_128_train_060921/data/xH_21cm_i5659.bin
+dataLC_128_train_060921/data/tar_names_part26.npy
+ Starting rank 25 at: 16:40:58
+ Rank=25 resumes itration from i=8657.
+ Processors repartition:
+ rank 25	8658	8658
+... rank 25 done at 16:51:14.
+ Starting rank 28 at: 16:40:58
+ Rank=28 resumes itration from i=9656.
+ Processors repartition:
+ rank 28	9657	9657
+... rank 28 done at 16:51:14.
+ Starting rank 29 at: 16:40:58
+ Rank=29 resumes itration from i=9999.
+ Processors repartition:
+ rank 29	10000	10000
+ Gather done:	16:40:58
+
+... rank 29 done at 16:51:14.
+ Starting rank 27 at: 16:40:58
+ Rank=27 resumes itration from i=9323.
+ Processors repartition:
+ rank 27	9324	9324
+... rank 27 done at 16:51:14.
+ Starting rank 24 at: 16:40:58
+ Rank=24 resumes itration from i=8324.
+ Processors repartition:
+ rank 24	8325	8325
+... rank 24 done at 16:51:14.
+ Starting rank 23 at: 16:40:58
+ Rank=23 resumes itration from i=7991.
+ Processors repartition:
+ rank 23	7992	7992
+... rank 23 done at 16:51:14.
+ Starting rank 26 at: 16:40:58
+ Rank=26 resumes itration from i=8990.
+ Processors repartition:
+ rank 26	8991	8991
+... rank 26 done at 16:51:14.
+ Starting rank 18 at: 16:40:58
+ Rank=18 resumes itration from i=6326.
+ Processors repartition:
+ rank 18	6327	6327
+... rank 18 done at 16:51:14.
+ Starting rank 16 at: 16:40:58
+ Rank=16 resumes itration from i=5660.
+ Processors repartition:
+ rank 16	5661	5661
+... rank 16 done at 16:51:14.
+ Starting rank 19 at: 16:40:58
+ Rank=19 resumes itration from i=6659.
+ Processors repartition:
+ rank 19	6660	6660
+... rank 19 done at 16:51:14.
+ Starting rank 15 at: 16:40:58
+ Rank=15 resumes itration from i=5327.
+ Processors repartition:
+ rank 15	5328	5328
+... rank 15 done at 16:51:14.
+ Starting rank 17 at: 16:40:58
+ Rank=17 resumes itration from i=5993.
+ Processors repartition:
+ rank 17	5994	5994
+... rank 17 done at 16:51:14.
+ Starting rank 22 at: 16:40:58
+ Rank=22 resumes itration from i=7658.
+ Processors repartition:
+ rank 22	7659	7659
+... rank 22 done at 16:51:14.
+ Starting rank 20 at: 16:40:58
+ Rank=20 resumes itration from i=6992.
+ Processors repartition:
+ rank 20	6993	6993
+... rank 20 done at 16:51:14.
+ Starting rank 21 at: 16:40:58
+ Rank=21 resumes itration from i=7325.
+ Processors repartition:
+ rank 21	7326	7326
+... rank 21 done at 16:51:14.
+ Starting rank 0 at: 16:40:58
+ Rank=0 resumes itration from i=332.
+ Processors repartition:
+ rank 0	333	333
+... rank 0 done at 16:51:14.
+ Starting rank 7 at: 16:40:58
+ Rank=7 resumes itration from i=2663.
+ Processors repartition:
+ rank 7	2664	2664
+... rank 7 done at 16:51:14.
+ Starting rank 14 at: 16:40:58
+ Rank=14 resumes itration from i=4994.
+ Processors repartition:
+ rank 14	4995	4995
+... rank 14 done at 16:51:14.
+ Starting rank 3 at: 16:40:58
+ Rank=3 resumes itration from i=1331.
+ Processors repartition:
+ rank 3	1332	1332
+... rank 3 done at 16:51:14.
+ Starting rank 5 at: 16:40:58
+ Rank=5 resumes itration from i=1997.
+ Processors repartition:
+ rank 5	1998	1998
+... rank 5 done at 16:51:14.
+ Starting rank 13 at: 16:40:58
+ Rank=13 resumes itration from i=4661.
+ Processors repartition:
+ rank 13	4662	4662
+... rank 13 done at 16:51:14.
+ Starting rank 2 at: 16:40:58
+ Rank=2 resumes itration from i=998.
+ Processors repartition:
+ rank 2	999	999
+... rank 2 done at 16:51:14.
+ Starting rank 1 at: 16:40:58
+ Rank=1 resumes itration from i=665.
+ Processors repartition:
+ rank 1	666	666
+... rank 1 done at 16:51:14.
+ Starting rank 4 at: 16:40:58
+ Rank=4 resumes itration from i=1664.
+ Processors repartition:
+ rank 4	1665	1665
+... rank 4 done at 16:51:14.
+ Starting rank 6 at: 16:40:58
+ Rank=6 resumes itration from i=2330.
+ Processors repartition:
+ rank 6	2331	2331
+... rank 6 done at 16:51:14.
+ Starting rank 10 at: 16:40:58
+ Rank=10 resumes itration from i=3662.
+ Processors repartition:
+ rank 10	3663	3663
+... rank 10 done at 16:51:14.
+ Starting rank 8 at: 16:40:58
+ Rank=8 resumes itration from i=2996.
+ Processors repartition:
+ rank 8	2997	2997
+... rank 8 done at 16:51:14.
+ Starting rank 9 at: 16:40:58
+ Rank=9 resumes itration from i=3329.
+ Processors repartition:
+ rank 9	3330	3330
+... rank 9 done at 16:51:14.
+ Starting rank 12 at: 16:40:58
+ Rank=12 resumes itration from i=4328.
+ Processors repartition:
+ rank 12	4329	4329
+... rank 12 done at 16:51:14.
+ Starting rank 11 at: 16:40:58
+ Rank=11 resumes itration from i=3995.
+ Processors repartition:
+ rank 11	3996	3996
+... rank 11 done at 16:51:14.

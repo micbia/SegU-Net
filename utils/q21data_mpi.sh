@@ -1,7 +1,7 @@
 #!/bin/sh
 #SBATCH --job-name=py21cm
-#SBATCH --nodes 4
-#SBATCH --ntasks-per-node 10
+#SBATCH --nodes 2
+#SBATCH --ntasks-per-node 15
 
 #SBATCH --exclusive
 #SBATCH --account=dp004
@@ -30,5 +30,6 @@ module load pythonconda3/2020-02
 #DIR='/cosma6/data/dp004/dc-bian1/inputs/data3D_128_valid_190821/'
 #mpiexec -n ${SLURM_NTASKS} python create_data_21cmfast_mpi.py $DIR
 
-DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_valid_060921/'
+DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_train_060921/'
+#DIR='/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_valid_060921/'
 mpiexec -n ${SLURM_NTASKS} python create_lightcone_21cmfast_mpi.py $DIR

@@ -3,10 +3,10 @@
 #SBATCH -J segunet
 #SBATCH -o logs/segunet.%J.out
 #SBATCH -e logs/segunet.%J.err
-#SBATCH -p cosma6 	
+#SBATCH -p cosma6
 #SBATCH -A dp004
 #SBATCH --exclusive
-#SBATCH -t 12:00:00
+#SBATCH -t 24:00:00
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mb756@sussex.ac.uk
 

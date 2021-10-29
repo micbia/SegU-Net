@@ -104,7 +104,7 @@ if not isinstance(DATA_AUGMENTATION, str):
 else:
     if isinstance(DATASET_PATH, (list, np.ndarray)):
         print('Data will ber extracted in batches...')
-        size_train_dataset, size_valid_dataset = 10000, 1500
+        size_train_dataset, size_valid_dataset = 200, 200
         train_idx = np.arange(0, size_train_dataset, dtype=int)
         test_idx = np.arange(0, size_valid_dataset, dtype=int)
     else:
@@ -151,9 +151,9 @@ else:
         #model = LSTM_Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
     else:
         print('\nModel on GPU\n')
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        session = tf.Session(config=config)
+        #config = tf.ConfigProto()
+        #config.gpu_options.allow_growth = True
+        #session = tf.Session(config=config)
         with tf.device("/cpu:0"):
             model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         model = multi_gpu_model(model, gpus=GPU)
@@ -186,11 +186,11 @@ else:
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
         train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = DataGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = DataGenerator(path=PATH_VALID, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
     elif(DATA_AUGMENTATION == 'LC'):
         print('\nData augmentation: Create LC data with noise cone and smooth...\n')
         train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
     results = model.fit_generator(generator=train_generator, 
                                   steps_per_epoch=(size_train_dataset//BATCH_SIZE),
@@ -217,5 +217,5 @@ f.close()
 #plot_loss(output=results, path=PATH_OUT+'outputs/')
 os.system('python utils_plot/postpros_plot.py %s/outputs/' %PATH_OUT)
 
-# Insert accuracy in the output directory name
+# Write accuracy in the output directory name
 #os.system('mv %s %s_acc%d' %(PATH_OUT[:-1], PATH_OUT[:-1], 100*np.max(results.history["val_binary_accuracy"])))

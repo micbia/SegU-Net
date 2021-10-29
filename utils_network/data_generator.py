@@ -1,4 +1,5 @@
-import zipfile, math, random, numpy as np, os, tools21cm as t2c
+import zipfile, tarfile, math, random, numpy as np, os, tools21cm as t2c, sys
+import pandas as pd
 
 from datetime import datetime
 from glob import glob
@@ -12,36 +13,33 @@ class LightConeGenerator(Sequence):
     Michele, 21 Sep 2021: up to date the class deal with LC data that are already smoothed and calculated the noise
     """
     def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False,
-                 data_shape=None, tobs=1000, uvfile='/cosma6/data/dp004/dc-bian1/uvmap_128_z7-20.pkl'):
+                 data_shape=None, tobs=1000, shuffle=False):
         """
         Arguments:
          tobs: int
                 observational time, for noise calcuation.
         """
         self.path = path
-        self.indexes = data_temp
+        self.data_temp = data_temp
         self.batch_size = batch_size
         self.data_shape = data_shape
-        self.shuffle = False
+        self.shuffle = shuffle
         self.zipf = zipf
-        self.uvfile = uvfile
+        if(self.zipf):
+            # the index of the array indicate the number of the 
+            self.content = np.loadtxt(self.path+'data/content.txt', dtype=int)
+            self.path_in_zip = self.path[self.path[:-1].rfind('/')+1:]+'data/'
         self.tobs = tobs
-
-        self.data_size = len(self.indexes)
+        self.data_size = len(self.data_temp)
         self.on_epoch_end()
-
-        self.astro_par = np.loadtxt('%sastro_params.txt' %self.path, unpack=True)
-        with open(self.path+'user_params.txt','r') as f:
+        
+        self.astro_par = np.loadtxt('%sparameters/astro_params.txt' %self.path, unpack=True)
+        with open('%sparameters/user_params.txt' %self.path,'r') as f:
             self.user_par = eval(f.read())
 
     def __len__(self):
         # number of batches
-        return int(np.floor(self.data_size//self.batch_size))
-
-    def on_epoch_end(self):
-        # Updates indexes after each epoch
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+        return self.data_size//self.batch_size
 
     def __getitem__(self, index):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
@@ -51,42 +49,51 @@ class LightConeGenerator(Sequence):
 
         for i, idx in enumerate(indexes):
             if(self.zipf):
-                if(len(self.data_shape) == 3):
-                    for var in glob('%s*part*.zip' %self.path):
-                        try:
-                            with zipfile.ZipFile(var, 'r') as myzip:
-                                # for consistency we keep the same nomenclature as in the case of coeval cube, but these inputs should be dT and xH derived from LCs
-                                f = myzip.extract(member='%s/data/dT1_21cm_i%d.bin' %(var[var[:-5].rfind('/')+1:-4], idx), path=self.path)
-                                dT = t2c.read_cbin(f) 
-                                f = myzip.extract(member='%s/data/xH_21cm_i%d.bin' %(var[var[:-5].rfind('/')+1:-4], idx), path=self.path)
-                                xH = t2c.read_cbin(f) 
-                                os.system('rm -r %s/' %var[:-4])  
-                                break
-                        except:
-                            pass
-                elif(len(self.data_shape) == 2):
-                    with zipfile.ZipFile(self.path, 'r') as myzip:
-                        dT = np.load(myzip.open('%s/data/image_21cm_i%d.npy' %(self.path[self.path[:-5].rfind('/')+1:-4], i)))
-                        xH = np.load(myzip.open('%s/data/mask_21cm_i%d.npy' %(self.path[self.path[:-5].rfind('/')+1:-4], i)))
+                i_tar = self.content[idx]
+                name_tar = '%sdata/%s_part%d.tar.gz' %(self.path, self.path[self.path[:-1].rfind('/')+1:-1], i_tar)
+                mytar = tarfile.open(name_tar, 'r')
+
+                # load file containing TarInfo
+                tar_content = np.load('%sdata/tar_content_part%d.npy' %(self.path, i_tar), allow_pickle=True) 
+                tar_names = np.load('%sdata/tar_names_part%d.npy' %(self.path, i_tar))
+                
+                # create DataFrame to easly pick the correct TarInfo
+                tar_df = pd.DataFrame(data=tar_content, index=tar_names)
+
+                # extract file
+                member = tar_df.loc['%sdT3_21cm_i%d.bin' %(self.path_in_zip, idx),0]
+                temp_data = mytar.extractfile(member).read()
+                temp_mesh = np.frombuffer(temp_data, count=3, dtype='int32')
+                dT = np.frombuffer(temp_data, count=np.prod(temp_mesh), dtype='float32').reshape(temp_mesh, order='C')
+                member = tar_df.loc['%sxH_21cm_i%d.bin' %(self.path_in_zip, idx),0]
+                temp_data = mytar.extractfile(member).read()
+                temp_mesh = np.frombuffer(temp_data, count=3, dtype='int32')
+                xH = np.frombuffer(temp_data, count=np.prod(temp_mesh), dtype='float32').reshape(temp_mesh, order='C')
+                mytar.close()
+                
+                # apply manipolatino on the LC data
+                X[i], y[i] = self._lc_data(x=dT, y=xH)
             else:
-                dT = t2c.read_cbin('%sdata/dT1_21cm_i%d.bin' %(self.path, idx))
-                xH = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(self.path, idx))
-        
-            #X[i] = self._noise_smt_dT(dT1=dT, idx=idx)
-            #y[i] = self._smt_xH(xH_box=xH, idx=idx)
-            rseed2 = random.randint(0, dT.shape[-1])
-            X[i] = dT[:,:,rseed2]
-            y[i] = xH[:,:,rseed2]
+                # TODO: implement the case for uncompressed files
+                sys.exit('TO IMPLEMENT LOAD NON COMPRESSED DATA!!!')
 
         X = X[..., np.newaxis]
         y = y[..., np.newaxis]
         
         return X, y
-        X = X[..., np.newaxis]
-        y = y[..., np.newaxis]
-        
-        return X, y
 
+    def on_epoch_end(self):
+        # Updates indexes after each epoch
+        self.indexes = self.data_temp
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+    def _lc_data(self, x, y):
+        #if(len(self.data_shape) == 3):
+        rseed2 = random.randint(0, x.shape[-1]-1)
+        dT_sampled = x[:,:,rseed2]
+        xH_sampled = y[:,:,rseed2]
+        return dT_sampled, xH_sampled
 
     """ TODO: smoothing for LC data
     def _lc_noise_smt_dT(self, lc1, idx):
