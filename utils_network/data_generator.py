@@ -1,10 +1,10 @@
-import zipfile, tarfile, math, random, numpy as np, os, tools21cm as t2c, sys
+import zipfile, tarfile, math, random, numpy as np, os, sys
 import pandas as pd
 
 from datetime import datetime
 from glob import glob
-from keras.utils import Sequence
-from tqdm import tqdm
+from tensorflow.keras.utils import Sequence
+
 
 class LightConeGenerator(Sequence):
     """
@@ -71,12 +71,17 @@ class LightConeGenerator(Sequence):
                 xH = np.frombuffer(temp_data, count=np.prod(temp_mesh), dtype='float32').reshape(temp_mesh, order='C')
                 mytar.close()
                 
-                # apply manipolatino on the LC data
+                # apply manipolation on the LC data
                 X[i], y[i] = self._lc_data(x=dT, y=xH)
             else:
-                # TODO: implement the case for uncompressed files
-                sys.exit('TO IMPLEMENT LOAD NON COMPRESSED DATA!!!')
+                # read LC
+                dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                
+                # apply manipolation on the LC data
+                X[i], y[i] = self._lc_data(x=dT, y=xH)
 
+        # add channel dimension
         X = X[..., np.newaxis]
         y = y[..., np.newaxis]
         
@@ -91,11 +96,45 @@ class LightConeGenerator(Sequence):
     def _lc_data(self, x, y):
         #if(len(self.data_shape) == 3):
         rseed2 = random.randint(0, x.shape[-1]-1)
-        dT_sampled = x[:,:,rseed2]
-        xH_sampled = y[:,:,rseed2]
+        dT_sampled = x[:,:,rseed2].astype(np.float32)
+        xH_sampled = y[:,:,rseed2].astype(np.float32)
+        #scaled_dT_sampled = self._RescaleData(arr=dT_sampled, a=1e-7, b=1.-1e-7)
+        #scaled_xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
+        #return scaled_dT_sampled, scaled_xH_sampled
         return dT_sampled, xH_sampled
 
-    """ TODO: smoothing for LC data
+
+    def _RescaleData(self, arr, a=-1, b=1):
+        scaled_arr = (arr.astype(np.float32) - np.min(arr))/(np.max(arr) - np.min(arr)) * (b-a) + a
+        return scaled_arr
+
+        
+    def _read_cbin(self, filename, bits=32, order='C', dimensions=3):
+        ''' Read a binary file with three inital integers (a cbin file).
+        
+        Parameters:
+                * filename (string): the filename to read from
+                * bits = 32 (integer): the number of bits in the file
+                * order = 'C' (string): the ordering of the data. Can be 'C'
+                        for C style ordering, or 'F' for fortran style.
+                * dimensions (int): the number of dimensions of the data (default:3)
+                        
+        Returns:
+                The data as a three dimensional numpy array.
+        '''
+
+        assert(bits ==32 or bits==64)
+
+        f = open(filename)
+
+        temp_mesh = np.fromfile(f, count=dimensions, dtype='int32')
+
+        datatype = np.float32 if bits == 32 else np.float64
+        data = np.fromfile(f, dtype=datatype, count=np.prod(temp_mesh))
+        data = data.reshape(temp_mesh, order=order)
+        return data
+
+    #TODO: smoothing for LC data
     def _lc_noise_smt_dT(self, lc1, idx):
         assert idx == self.astro_par[0,idx]
         z = self.astro_par[1, idx]
@@ -146,7 +185,6 @@ class LightConeGenerator(Sequence):
         mask_xn = smt_xn>0.5
 
         return mask_xn.astype(int)
-    """
 
 
 class DataGenerator(Sequence):
@@ -394,100 +432,3 @@ class RotateGenerator(Sequence):
 
 
 
-import tools21cm as t2c, py21cmfast as p21c
-from datetime import datetime
-
-'''
-class LightConeGenerator(Sequence):
-    """
-    Data generator of 3D data (calculate noise cube and smooth data).
-    """
-    def __init__(self, data_shape, uvpath='./', z_min=7., tobs=1000, shuffle=False):
-        """
-        Arguments:
-         tobs: int
-                observational time, for noise calcuation.
-        """
-
-        self.user_params = {'HII_DIM':128, 'DIM':384, 'BOX_LEN':256}
-        self.cosmo_params = {'OMm':0.27, 'OMb':0.046, 'SIGMA_8':0.82, 'POWER_INDEX':0.96}
-        
-        self.data_shape = data_shape
-        self.data_size = 648
-
-        self.path = path
-        self.z_min = z_min
-        self.z_max = z_max
-        self.tobs = tobs
-        self.uvfile = uvpath
-        self.data_shape = (params['HII_DIM'], params['HII_DIM'])
-
-        self.data_size = len(self.indexes)
-        self.on_epoch_end()
-        
-
-    def __len__(self):
-        # number of batches
-        return int(self.data_size)
-
-
-    def on_epoch_end(self):
-        # Updates indexes after each epoch
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
-
-
-    def __getitem__(self, index):
-        # Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-
-        # Generate data
-        X, y = self.__data_generation()
-
-        X = X[..., np.newaxis]
-        y = y[..., np.newaxis]
-        
-        return X, y
-
-
-    def __data_generation(self):
-        'Generates data containing batch_size samples' 
-        # X : (n_samples, *dim, n_channels)
-
-        # astro parameters for 21cmFAST
-        eff_fact = random.gauss(52.5, 20.)
-        Rmfp = random.gauss(12.5, 5.)
-        Tvir = random.gauss(4.65, 0.5)
-        astro_params = {'HII_EFF_FACTOR':self.eff_fact, 'R_BUBBLE_MAX':self.Rmfp, 'ION_Tvir_MIN':self.Tvir}
-
-        # create seed for 21cmFAST
-        str_seed = [var for var in datetime.now().strftime('%d%H%M%S')]
-        np.random.shuffle(str_seed)
-        seed = int(''.join(str_seed))
-
-        # lightcone data
-        lightcone = p21c.run_lightcone(redshift=self.z_min, max_redshift=self.z_max, astro_params=astro_params, cosmo_params=self.cosmo_params, user_params=self.user_params, lightcone_quantities=("brightness_temp", 'xH_box'), direc=p21c.config['direc'], random_seed=seed, cleanup=True)
-
-        dataLC2 = np.array([lightcone.brightness_temp[:,:,i] for i in range(lightcone.brightness_temp.shape[-1])])
-        redshiftLC = lightcone.lightcone_redshifts
-        LC1 = t2c.subtract_mean_signal(dataLC, los_axis=2)
-
-        noise_cone = t2c.noise_lightcone(ncells=LC1.shape[0], zs=redshiftLC, obs_time=self.tobs, boxsize=user_params['BOX_LEN'], n_jobs=1, save_uvmap=self.uvfile)
-        LC3, redshiftLC3 = t2c.smooth_lightcone(lightcone=LC1+noise_cone, z_array=redshiftLC, box_size_mpc=params['BOX_LEN'])
-
-        dataLC_xH = np.array([lightcone.xH_box[:,:,i] for i in range(lightcone.brightness_temp.shape[-1])])
-        mask_LCxH = (LC_xH>0.5).astype(int)
-
-        X = np.empty((self.batch_size, *self.dim, self.n_channels))
-        y = np.empty((self.batch_size), dtype=int)
-
-        # Generate data
-        for i, ID in enumerate(list_IDs_temp):
-            # Store sample
-            X[i,] = np.load('data/' + ID + '.npy')
-
-            # Store class
-            y[i] = self.labels[ID]
-
-        return X, y
-'''

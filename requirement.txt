@@ -2,3 +2,6 @@ tensorflow==2.1.0
 Keras==2.3.1
 tqdm
 scikit-optimize
+pydot
+scipy==1.4.1
+talos==1.0.0

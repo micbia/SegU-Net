@@ -5,11 +5,11 @@ from sklearn.model_selection import train_test_split
 from datetime import datetime
 from glob import glob
 
-from keras.callbacks import EarlyStopping
-from keras.optimizers import Adam
-from keras.models import load_model
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import load_model
 from sklearn.metrics import matthews_corrcoef
-from keras.utils import multi_gpu_model
+from tensorflow.keras.utils import multi_gpu_model
 
 from config.net_config import NetworkConfig
 from utils_network.networks import Unet, LSTM_Unet
@@ -46,12 +46,12 @@ GPU = conf.gpus
 IO_PATH = conf.io_path
 DATASET_PATH = conf.dataset_path
 if isinstance(DATASET_PATH, list):
-    PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path[0]
-    PATH_VALID = IO_PATH+'inputs/'+conf.dataset_path[1]
+    PATH_TRAIN = IO_PATH+'inputs/'+DATASET_PATH[0]
+    PATH_VALID = IO_PATH+'inputs/'+DATASET_PATH[1]
 else:
     PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path
     PATH_VALID = PATH_TRAIN
-ZIPFILE = ('tar.gz' in glob(PATH_TRAIN+'data/*tar.gz')[0] and 'tar.gz' in glob(PATH_VALID+'data/*tar.gz')[0])
+ZIPFILE = (0 < len(glob(PATH_TRAIN+'data/*tar.gz')) and 0 < len(glob(PATH_VALID+'data/*tar.gz')))
 BEST_EPOCH = conf.best_epoch
 # if you want to restart from the previous best model set RESUME_EPOCH = BEST_EPOCH
 RESUME_EPOCH = conf.resume_epoch
@@ -104,15 +104,15 @@ if not isinstance(DATA_AUGMENTATION, str):
 else:
     if isinstance(DATASET_PATH, (list, np.ndarray)):
         print('Data will ber extracted in batches...')
-        size_train_dataset, size_valid_dataset = 200, 200
+        size_train_dataset, size_valid_dataset = 10000, 1500
         train_idx = np.arange(0, size_train_dataset, dtype=int)
-        test_idx = np.arange(0, size_valid_dataset, dtype=int)
+        valid_idx = np.arange(0, size_valid_dataset, dtype=int)
     else:
         print('Data will ber extracted in batches...')
         test_size, datasize = 0.15, 10000
         train_idx = np.arange(0, datasize*(1-test_size), dtype=int)
         size_train_dataset = train_idx.size
-        test_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
+        valid_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
 
 # Define model or load model
 if(os.path.exists(RESUME_MODEL)):
@@ -146,23 +146,27 @@ if(os.path.exists(RESUME_MODEL)):
         print('\nScore resumed model:\n loss: %.3f' %resume_loss)
 else: 
     print('\nModel created')
+    resume_loss = None
     if(GPU == None or GPU == 0):
         model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         #model = LSTM_Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
+        model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
     else:
         print('\nModel on GPU\n')
-        #config = tf.ConfigProto()
-        #config.gpu_options.allow_growth = True
-        #session = tf.Session(config=config)
         with tf.device("/cpu:0"):
             model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         model = multi_gpu_model(model, gpus=GPU)
-    
-    resume_loss = None
-    model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+        model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
+        """
+        strategy = tf.distribute.MirroredStrategy()
+        with strategy.scope():
+            # GPU parallelisation from: https://keras.io/getting_started/faq/#how-can-i-train-a-keras-model-on-multiple-gpus-on-a-single-machine
+            model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)    
+            model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+        """
 # define callbacks
-callbacks = [EarlyStopping(patience=21, verbose=1),
+callbacks = [EarlyStopping(patience=15, verbose=1),
              ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH), best=resume_loss),
              SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=resume_loss),
              HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]
@@ -186,21 +190,37 @@ else:
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
         train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = DataGenerator(path=PATH_VALID, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = DataGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
     elif(DATA_AUGMENTATION == 'LC'):
         print('\nData augmentation: Create LC data with noise cone and smooth...\n')
         train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-        valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=test_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+        valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
-    results = model.fit_generator(generator=train_generator, 
-                                  steps_per_epoch=(size_train_dataset//BATCH_SIZE),
-                                  epochs=EPOCHS,
-                                  initial_epoch=RESUME_EPOCH,
-                                  callbacks=callbacks,
-                                  validation_data=valid_generator,
-                                  shuffle=True)
-
-
+    if(GPU == None or GPU == 0):
+        results = model.fit(x=train_generator, #y=y_train,
+                            batch_size=BATCH_SIZE, 
+                            epochs=EPOCHS,
+                            initial_epoch=RESUME_EPOCH,
+                            callbacks=callbacks, 
+                            validation_data=valid_generator, 
+                            shuffle=True)
+        """
+        results = model.fit_generator(generator=train_generator, 
+                                    steps_per_epoch=(size_train_dataset//BATCH_SIZE),
+                                    epochs=EPOCHS,
+                                    initial_epoch=RESUME_EPOCH,
+                                    callbacks=callbacks,
+                                    validation_data=valid_generator,
+                                    shuffle=True)
+        """
+    else:
+        results = model.fit(x=train_generator, #y=y_train,
+                    batch_size=BATCH_SIZE*GPU, 
+                    epochs=EPOCHS,
+                    initial_epoch=RESUME_EPOCH,
+                    callbacks=callbacks, 
+                    validation_data=valid_generator, 
+                    shuffle=True)
 # write info for prediction on config_file
 best_model_epoch = max([int(sf[sf.rfind('p')+1:sf.rfind('.')]) for sf in glob(PATH_OUT+'checkpoints/model-sem21cm_ep*.h5')]) 
 f = open(glob('%s*.ini' %PATH_OUT)[0], 'a')

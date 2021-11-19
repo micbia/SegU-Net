@@ -1,0 +1,134 @@
+	Python 3.8.6 is now loaded in your environment.
+
+	CUDA-10.1 loaded
+
+	Python 3.8.6 is now loaded in your environment.
+
+	CUDA-10.1 loaded
+
+	TensorFlow-2.3.1 with Python3 loaded.
+
+2021-11-03 01:05:35.150146: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 01:06:06.702108: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcuda.so.1
+2021-11-03 01:06:07.362560: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 0 with properties: 
+pciBusID: 0000:06:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.364423: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 1 with properties: 
+pciBusID: 0000:07:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.366209: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 2 with properties: 
+pciBusID: 0000:0a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.368025: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 3 with properties: 
+pciBusID: 0000:0b:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.369814: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 4 with properties: 
+pciBusID: 0000:85:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.371644: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 5 with properties: 
+pciBusID: 0000:86:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.373437: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 6 with properties: 
+pciBusID: 0000:89:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.375174: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 7 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:07.375213: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 01:06:08.120505: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcublas.so.10
+2021-11-03 01:06:08.319972: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcufft.so.10
+2021-11-03 01:06:08.388242: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcurand.so.10
+2021-11-03 01:06:09.347776: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusolver.so.10
+2021-11-03 01:06:09.778821: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusparse.so.10
+2021-11-03 01:06:11.083082: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudnn.so.7
+2021-11-03 01:06:11.124450: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1858] Adding visible gpu devices: 0, 1, 2, 3, 4, 5, 6, 7
+2021-11-03 01:06:11.141201: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN)to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2021-11-03 01:06:11.710173: I tensorflow/core/platform/profile_utils/cpu_utils.cc:104] CPU Frequency: 2195160000 Hz
+2021-11-03 01:06:11.724269: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5ddc580 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2021-11-03 01:06:11.724332: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2021-11-03 01:06:22.965450: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5e7d200 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2021-11-03 01:06:22.965548: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965565: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (1): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965575: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (2): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965585: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (3): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965594: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (4): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965603: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (5): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965612: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (6): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.965621: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (7): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 01:06:22.985844: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 0 with properties: 
+pciBusID: 0000:06:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.987575: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 1 with properties: 
+pciBusID: 0000:07:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.989314: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 2 with properties: 
+pciBusID: 0000:0a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.991043: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 3 with properties: 
+pciBusID: 0000:0b:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.992761: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 4 with properties: 
+pciBusID: 0000:85:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.994476: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 5 with properties: 
+pciBusID: 0000:86:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.996185: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 6 with properties: 
+pciBusID: 0000:89:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.997908: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 7 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 01:06:22.997970: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 01:06:22.998049: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcublas.so.10
+2021-11-03 01:06:22.998087: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcufft.so.10
+2021-11-03 01:06:22.998120: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcurand.so.10
+2021-11-03 01:06:22.998151: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusolver.so.10
+2021-11-03 01:06:22.998184: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusparse.so.10
+2021-11-03 01:06:22.998216: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudnn.so.7
+2021-11-03 01:06:23.037742: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1858] Adding visible gpu devices: 0, 1, 2, 3, 4, 5, 6, 7
+2021-11-03 01:06:23.089604: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 01:06:30.364797: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1257] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-11-03 01:06:30.364915: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1263]      0 1 2 3 4 5 6 7 
+2021-11-03 01:06:30.364945: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 0:   N Y Y Y Y N N N 
+2021-11-03 01:06:30.364958: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 1:   Y N Y Y N Y N N 
+2021-11-03 01:06:30.364968: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 2:   Y Y N Y N N Y N 
+2021-11-03 01:06:30.364977: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 3:   Y Y Y N N N N Y 
+2021-11-03 01:06:30.364987: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 4:   Y N N N N Y Y Y 
+2021-11-03 01:06:30.364997: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 5:   N Y N N Y N Y Y 
+2021-11-03 01:06:30.365006: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 6:   N N Y N Y Y N Y 
+2021-11-03 01:06:30.365016: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 7:   N N N Y Y Y Y N 
+2021-11-03 01:06:30.409240: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 30130 MB memory) -> physical GPU (device: 0, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:06:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.419091: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:1 with 30130 MB memory) -> physical GPU (device: 1, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:07:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.421144: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:2 with 30130 MB memory) -> physical GPU (device: 2, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:0a:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.423151: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:3 with 30130 MB memory) -> physical GPU (device: 3, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:0b:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.425133: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:4 with 30130 MB memory) -> physical GPU (device: 4, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:85:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.427097: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:5 with 30130 MB memory) -> physical GPU (device: 5, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:86:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.429031: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:6 with 30130 MB memory) -> physical GPU (device: 6, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:89:00.0, compute capability: 7.0)
+2021-11-03 01:06:30.430999: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:7 with 30130 MB memory) -> physical GPU (device: 7, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:8a:00.0, compute capability: 7.0)
+WARNING:tensorflow:From /jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/data/ops/multi_device_iterator_ops.py:601: get_next_as_optional (from tensorflow.python.data.ops.iterator_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.data.Iterator.get_next_as_optional()` instead.
+2021-11-03 01:07:45.585671: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudnn.so.7
+2021-11-03 01:07:54.030560: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcublas.so.10
+Traceback (most recent call last):
+  File "segUNet.py", line 216, in <module>
+    results = model.fit(x=train_generator, #y=y_train,
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/training.py", line 108, in _method_wrapper
+    return method(self, *args, **kwargs)
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/training.py", line 1110, in fit
+    self._eval_data_handler = data_adapter.DataHandler(
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/data_adapter.py", line 1105, in __init__
+    self._adapter = adapter_cls(
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/data_adapter.py", line 909, in __init__
+    super(KerasSequenceAdapter, self).__init__(
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/data_adapter.py", line 786, in __init__
+    peek, x = self._peek_and_restore(x)
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/data_adapter.py", line 920, in _peek_and_restore
+    return x[0], x
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/SegU-Net/utils_network/data_generator.py", line 78, in __getitem__
+    dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/SegU-Net/utils_network/data_generator.py", line 128, in _read_cbin
+    f = open(filename)
+FileNotFoundError: [Errno 2] No such file or directory: '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/inputs/dataLC_128_valid_060921_untar/data/dT3_21cm_i674.bin'

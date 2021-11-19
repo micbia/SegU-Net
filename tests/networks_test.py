@@ -1,35 +1,33 @@
 import numpy as np, time
 
-from keras.models import Model, load_model
-from keras.layers import Input, BatchNormalization, Activation, Dropout, concatenate
-from keras.layers.convolutional import Conv2D, Conv2DTranspose, Conv3D, Conv3DTranspose
-from keras.layers.pooling import MaxPooling2D, GlobalMaxPool2D, MaxPooling3D
-from keras.layers.merge import concatenate
-from keras.utils import plot_model
-
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Input, BatchNormalization, Activation, Dropout, concatenate
+from tensorflow.keras.layers import Conv2D, Conv2DTranspose, Conv3D, Conv3DTranspose
+from tensorflow.keras.layers import ConvLSTM2D #, ConvLSTM3D #only from tf v2.6.0
+from tensorflow.keras.layers import MaxPooling2D, GlobalMaxPool2D, MaxPooling3D
+from tensorflow.keras.utils import plot_model
 
 def Unet(img_shape, params, path='./'):
-    
     # print message at runtime
-    if(img_shape[0] == 64 and np.size(img_shape) == 3):
+    if(params['depth'] == 3 and np.size(img_shape) == 3):
         print('Create 2D U-Net network with 3 levels...\n')
-    elif(img_shape[0] == 128 and np.size(img_shape) == 3):
+    elif(params['depth'] == 4 and np.size(img_shape) == 3):
         print('Create 2D U-Net network with 4 levels...\n')
-    elif(img_shape[0] == 64 and np.size(img_shape) == 4):
+    elif(params['depth'] == 3 and np.size(img_shape) == 4):
         print('Create 3D U-Net network with 3 levels...\n')
-    elif(img_shape[0] == 128  and np.size(img_shape) == 4):
+    elif(params['depth'] == 4  and np.size(img_shape) == 4):
         print('Create 3D U-Net network with 4 levels...\n')
     else:
         print('???')
     
     def Conv2D_Layers(prev_layer, kernel_size, nr_filts, layer_name):
         # first layer
-        a = Conv2D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+        a = Conv2D(filters=nr_filts, kernel_size=params['kernel_size'], padding='same',
                    kernel_initializer="he_normal", name='%s_C1' %layer_name)(prev_layer)
         a = BatchNormalization(name='%s_BN1' %layer_name)(a)
         a = Activation(params['activation'], name='relu_%s_A1' %layer_name)(a)
         # second layer
-        a = Conv2D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+        a = Conv2D(filters=nr_filts, kernel_size=params['kernel_size'], padding='same',
                    kernel_initializer="he_normal", name='%s_C2' %layer_name)(a)
         a = BatchNormalization(name='%s_BN2' %layer_name)(a)
         a = Activation(params['activation'], name='relu_%s_A2' %layer_name)(a)
@@ -38,12 +36,12 @@ def Unet(img_shape, params, path='./'):
 
     def Conv3D_Layers(prev_layer, kernel_size, nr_filts, layer_name):
         # first layer
-        a = Conv3D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+        a = Conv3D(filters=nr_filts, kernel_size=params['kernel_size'], padding='same',
                    kernel_initializer="he_normal", name='%s_C1' %layer_name)(prev_layer)
         a = BatchNormalization(name='%s_BN1' %layer_name)(a)
         a = Activation(params['activation'], name='relu_%s_A1' %layer_name)(a)
         # second layer
-        a = Conv3D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+        a = Conv3D(filters=nr_filts, kernel_size=params['kernel_size'], padding='same',
                    kernel_initializer="he_normal", name='%s_C2' %layer_name)(a)
         a = BatchNormalization(name='%s_BN2' %layer_name)(a)
         a = Activation(params['activation'], name='relu_%s_A2' %layer_name)(a)
@@ -212,10 +210,10 @@ def Unet(img_shape, params, path='./'):
         output_image = Conv3D(filters=int(img_shape[-1]), kernel_size=(params['kernel_size'], params['kernel_size'], params['kernel_size']), 
                               strides=(1, 1, 1), padding='same', name='out_C')(d1)
     
-    output_image = Activation("sigmoid", name='sigmoid')(output_image)
+    output_image = Activation(params['final_activation'], name=params['final_activation'])(output_image)
 
     model = Model(inputs=[img_input], outputs=[output_image], name='Unet')
 
-    plot_model(model, to_file=path+'model_visualization.png', show_shapes=True, show_layer_names=True)
+    plot_model(model, to_file=path+'model_visualisation.png', show_shapes=True, show_layer_names=True)
 
     return model

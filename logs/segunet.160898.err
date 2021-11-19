@@ -1,0 +1,177 @@
+	Python 3.8.6 is now loaded in your environment.
+
+	CUDA-10.1 loaded
+
+	Python 3.8.6 is now loaded in your environment.
+
+	CUDA-10.1 loaded
+
+	TensorFlow-2.3.1 with Python3 loaded.
+
+2021-11-03 11:42:10.876169: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 11:42:45.934162: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcuda.so.1
+2021-11-03 11:42:46.452340: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 0 with properties: 
+pciBusID: 0000:06:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.455428: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 1 with properties: 
+pciBusID: 0000:07:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.458386: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 2 with properties: 
+pciBusID: 0000:0a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.461130: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 3 with properties: 
+pciBusID: 0000:0b:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.463890: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 4 with properties: 
+pciBusID: 0000:85:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.466605: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 5 with properties: 
+pciBusID: 0000:86:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.469514: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 6 with properties: 
+pciBusID: 0000:89:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.472368: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 7 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:42:46.472408: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 11:42:47.436235: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcublas.so.10
+2021-11-03 11:42:47.655171: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcufft.so.10
+2021-11-03 11:42:47.722617: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcurand.so.10
+2021-11-03 11:42:48.517123: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusolver.so.10
+2021-11-03 11:42:48.838785: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusparse.so.10
+2021-11-03 11:42:49.853856: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudnn.so.7
+2021-11-03 11:42:49.890882: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1858] Adding visible gpu devices: 0, 1, 2, 3, 4, 5, 6, 7
+2021-11-03 11:42:49.927661: I tensorflow/core/platform/cpu_feature_guard.cc:142] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN)to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2021-11-03 11:42:50.595834: I tensorflow/core/platform/profile_utils/cpu_utils.cc:104] CPU Frequency: 2195160000 Hz
+2021-11-03 11:42:50.618305: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5b5c400 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+2021-11-03 11:42:50.618350: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+2021-11-03 11:43:02.315687: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x5bfd080 initialized for platform CUDA (this does not guarantee that XLA will be used). Devices:
+2021-11-03 11:43:02.315786: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315802: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (1): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315812: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (2): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315821: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (3): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315830: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (4): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315839: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (5): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315848: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (6): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.315857: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (7): Tesla V100-SXM2-32GB-LS, Compute Capability 7.0
+2021-11-03 11:43:02.361822: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 0 with properties: 
+pciBusID: 0000:06:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.363556: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 1 with properties: 
+pciBusID: 0000:07:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.365331: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 2 with properties: 
+pciBusID: 0000:0a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.367096: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 3 with properties: 
+pciBusID: 0000:0b:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.368820: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 4 with properties: 
+pciBusID: 0000:85:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.370583: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 5 with properties: 
+pciBusID: 0000:86:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.372380: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 6 with properties: 
+pciBusID: 0000:89:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.374103: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1716] Found device 7 with properties: 
+pciBusID: 0000:8a:00.0 name: Tesla V100-SXM2-32GB-LS computeCapability: 7.0
+coreClock: 1.44GHz coreCount: 80 deviceMemorySize: 31.75GiB deviceMemoryBandwidth: 772.48GiB/s
+2021-11-03 11:43:02.374164: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 11:43:02.374245: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcublas.so.10
+2021-11-03 11:43:02.374282: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcufft.so.10
+2021-11-03 11:43:02.374314: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcurand.so.10
+2021-11-03 11:43:02.374345: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusolver.so.10
+2021-11-03 11:43:02.374377: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcusparse.so.10
+2021-11-03 11:43:02.374409: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudnn.so.7
+2021-11-03 11:43:02.401664: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1858] Adding visible gpu devices: 0, 1, 2, 3, 4, 5, 6, 7
+2021-11-03 11:43:02.429238: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+2021-11-03 11:43:10.285347: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1257] Device interconnect StreamExecutor with strength 1 edge matrix:
+2021-11-03 11:43:10.285452: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1263]      0 1 2 3 4 5 6 7 
+2021-11-03 11:43:10.285478: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 0:   N Y Y Y Y N N N 
+2021-11-03 11:43:10.285491: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 1:   Y N Y Y N Y N N 
+2021-11-03 11:43:10.285502: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 2:   Y Y N Y N N Y N 
+2021-11-03 11:43:10.285512: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 3:   Y Y Y N N N N Y 
+2021-11-03 11:43:10.285521: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 4:   Y N N N N Y Y Y 
+2021-11-03 11:43:10.285531: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 5:   N Y N N Y N Y Y 
+2021-11-03 11:43:10.285541: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 6:   N N Y N Y Y N Y 
+2021-11-03 11:43:10.285550: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1276] 7:   N N N Y Y Y Y N 
+2021-11-03 11:43:10.345016: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 30130 MB memory) -> physical GPU (device: 0, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:06:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.373725: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:1 with 30130 MB memory) -> physical GPU (device: 1, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:07:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.375906: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:2 with 30130 MB memory) -> physical GPU (device: 2, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:0a:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.377962: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:3 with 30130 MB memory) -> physical GPU (device: 3, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:0b:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.380020: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:4 with 30130 MB memory) -> physical GPU (device: 4, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:85:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.382119: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:5 with 30130 MB memory) -> physical GPU (device: 5, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:86:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.384207: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:6 with 30130 MB memory) -> physical GPU (device: 6, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:89:00.0, compute capability: 7.0)
+2021-11-03 11:43:10.386304: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1402] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:7 with 30130 MB memory) -> physical GPU (device: 7, name: Tesla V100-SXM2-32GB-LS, pci bus id: 0000:8a:00.0, compute capability: 7.0)
+WARNING:tensorflow:From /jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/data/ops/multi_device_iterator_ops.py:601: get_next_as_optional (from tensorflow.python.data.ops.iterator_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use `tf.data.Iterator.get_next_as_optional()` instead.
+2021-11-03 11:44:27.086995: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudnn.so.7
+2021-11-03 11:44:35.874923: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcublas.so.10
+2021-11-03 11:44:51.678882: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.713853: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.714243: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.714522: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.714816: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.714843: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.715126: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+2021-11-03 11:44:51.715368: W tensorflow/core/framework/op_kernel.cc:1767] OP_REQUIRES failed at nccl_ops.cc:104 : Internal: NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+Traceback (most recent call last):
+  File "segUNet.py", line 216, in <module>
+    results = model.fit(x=train_generator, #y=y_train,
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/training.py", line 108, in _method_wrapper
+    return method(self, *args, **kwargs)
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/keras/engine/training.py", line 1098, in fit
+    tmp_logs = train_function(iterator)
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/def_function.py", line 780, in __call__
+    result = self._call(*args, **kwds)
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/def_function.py", line 840, in _call
+    return self._stateless_fn(*args, **kwds)
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/function.py", line 2829, in __call__
+    return graph_function._filtered_call(args, kwargs)  # pylint: disable=protected-access
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/function.py", line 1843, in _filtered_call
+    return self._call_flat(
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/function.py", line 1923, in _call_flat
+    return self._build_call_outputs(self._inference_function.call(
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/function.py", line 545, in call
+    outputs = execute.execute(
+  File "/jmain02/apps/python3/tensorflow/2.3.1/lib/python3.8/site-packages/tensorflow/python/eager/execute.py", line 59, in quick_execute
+    tensors = pywrap_tfe.TFE_Py_Execute(ctx._handle, device_name, op_name,
+tensorflow.python.framework.errors_impl.InternalError: 9 root error(s) found.
+  (0) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_0/Adam/Adam/update_1_1/Const/_887]]
+  (1) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_1/Adam/Adam/update_0/Const/_859]]
+  (2) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_6/Adam/Adam/update_0/Const/_799]]
+  (3) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_0/Adam/Adam/update_0/Const/_771]]
+  (4) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_3/Adam/Adam/update_0/Const/_719]]
+  (5) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+  (6) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_0/Adam/Adam/update_0/Const/_807]]
+  (7) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[div_no_nan_4/ReadVariableOp_4/_586]]
+  (8) Internal:  NCCL: unhandled system error. Set NCCL_DEBUG=WARN for detail.
+	 [[node NcclAllReduce (defined at segUNet.py:216) ]]
+	 [[GroupCrossDeviceControlEdges_4/Adam/Adam/update_0/Const/_895]]
+0 successful operations.
+0 derived errors ignored. [Op:__inference_train_function_83197]
+
+Function call stack:
+train_function -> train_function -> train_function -> train_function -> train_function -> train_function -> train_function -> train_function -> train_function
+
+slurmstepd: error: *** JOB 160898 ON dgk507 CANCELLED AT 2021-11-03T11:48:10 ***

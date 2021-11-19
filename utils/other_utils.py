@@ -1,10 +1,10 @@
-import numpy as np, matplotlib.pyplot as plt, random, operator, os
+import numpy as np, random, operator, os
 import zipfile
 from glob import glob
 from tqdm import tqdm
 from datetime import datetime 
 import time 
- 
+
 
 class Timer: 
     def __init__(self): 
@@ -105,10 +105,9 @@ def get_extend(a):
     ext = a[a.rfind('.'):]
     return ext
 
-def get_data_lc(path, fname=None, shuffle=False):
-    lc_dT = read_cbin(filename=path+fname+'_dT3.dat', dimensions=3)
-    #lc_mask = read_cbin(filename=path+fname+'_mask.dat', dimensions=3)
-    lc_mask = read_cbin(filename=path+fname+'_dT.dat', dimensions=3)
+def get_data_lc(path, i, shuffle=False):
+    lc_dT = read_cbin(filename='%sdata/dT3_21cm_i%d.bin' %(path, i), dimensions=3)
+    lc_mask = read_cbin(filename='%sdata/xH_21cm_i%d.bin' %(path, i), dimensions=3)
 
     size = lc_dT.shape[-1]
 
@@ -122,10 +121,8 @@ def get_data_lc(path, fname=None, shuffle=False):
     X = X[..., np.newaxis]
     Y = Y[..., np.newaxis]
 
-    #X = RescaleData(arr=X, a=0, b=1)
-    #Y = RescaleData(arr=Y, a=0, b=1)
-    X = RescaleData(arr=X, a=-1, b=1)
-    Y = RescaleData(arr=Y, a=-1, b=1)
+    X = RescaleData(arr=X, a=0, b=1)
+    Y = RescaleData(arr=Y, a=0, b=1)
 
     if(shuffle):
         idxs = np.array(range(size))

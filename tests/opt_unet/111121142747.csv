@@ -1,0 +1,4 @@
+round_epochs,loss,val_loss,activation,batch_size,coarse_dim,depth,dropout,epochs,final_activation,kernel_size,loss,lr,optimizer
+100,0.181031733751297,3.3986313343048096,<tensorflow.python.keras.layers.advanced_activations.LeakyReLU object at 0x7f10620c52e0>,512,256,4,0.1,100,sigmoid,6,binary_crossentropy,1e-06,<tensorflow.python.keras.optimizer_v2.adam.Adam object at 0x7f10620c5550>
+100,0.1788172572851181,2.695535182952881,<tensorflow.python.keras.layers.advanced_activations.LeakyReLU object at 0x7f10620c52e0>,256,256,4,0.1,100,sigmoid,4,binary_crossentropy,1e-05,<tensorflow.python.keras.optimizer_v2.adam.Adam object at 0x7f10620c5550>
+100,0.18319298326969147,2.2241010665893555,<tensorflow.python.keras.layers.advanced_activations.LeakyReLU object at 0x7f10620c52e0>,256,512,3,0.1,100,sigmoid,3,binary_crossentropy,1e-05,<tensorflow.python.keras.optimizer_v2.adam.Adam object at 0x7f10620c5550>

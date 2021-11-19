@@ -1,0 +1,43 @@
+	Python 3.8.6 is now loaded in your environment.
+
+	CUDA-10.1 loaded
+
+	Python 3.8.6 is now loaded in your environment.
+
+	CUDA-10.1 loaded
+
+	TensorFlow-2.3.1 with Python3 loaded.
+
+2021-11-02 22:52:41.098205: I tensorflow/stream_executor/platform/default/dso_loader.cc:48] Successfully opened dynamic library libcudart.so.10.1
+Traceback (most recent call last):
+  File "test_gpu.py", line 2, in <module>
+    import talos
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/talos/__init__.py", line 14, in <module>
+    from . import utils
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/talos/utils/__init__.py", line 15, in <module>
+    from wrangle import array_split as val_split
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/wrangle/__init__.py", line 2, in <module>
+    from .col import *
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/wrangle/col/__init__.py", line 3, in <module>
+    from .col_corr_ols import col_corr_ols
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/wrangle/col/col_corr_ols.py", line 3, in <module>
+    import statsmodels.api as sm
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/statsmodels/api.py", line 5, in <module>
+    from . import iolib
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/statsmodels/iolib/__init__.py", line 1, in <module>
+    from .foreign import StataReader, genfromdta, savetxt
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/statsmodels/iolib/foreign.py", line 14, in <module>
+    from statsmodels.compat.python import (lzip, lmap, lrange,
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/statsmodels/compat/__init__.py", line 1, in <module>
+    from statsmodels.tools._testing import PytestTester
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/statsmodels/tools/__init__.py", line 1, in <module>
+    from .tools import add_constant, categorical
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/statsmodels/tools/tools.py", line 7, in <module>
+    import scipy.linalg
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/scipy/linalg/__init__.py", line 190, in <module>
+    from .misc import *
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/scipy/linalg/misc.py", line 5, in <module>
+    from .blas import get_blas_funcs
+  File "/jmain02/home/J2AD005/jck02/mxb47-jck02/nnevn/lib/python3.8/site-packages/scipy/linalg/blas.py", line 214, in <module>
+    from scipy.linalg import _fblas
+ImportError: libmkl_rt.so: cannot open shared object file: No such file or directory
