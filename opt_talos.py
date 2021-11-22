@@ -1,18 +1,21 @@
 import talos
+from talos.utils import lr_normalizer
+
 import numpy as np, sys, pickle
 import tensorflow as tf
 
 from tensorflow.keras.layers import ReLU, LeakyReLU, ELU
-from tensorflow.keras.optimizers import RMSprop, Adam
+from tensorflow.keras.optimizers import RMSprop, Adam, Nadam
 from tensorflow.keras.utils import multi_gpu_model
 from tensorflow.keras.models import load_model
+from tensorflow.keras.losses import logcosh
 
 from config.net_config import NetworkConfig
 from tests.networks_test import Unet
 from sklearn.model_selection import train_test_split
 from utils.other_utils import get_data, get_batch, get_data_lc
 from config.net_config import NetworkConfig
-from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
+from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
 
 with open('utils_network/avail_metrics.pkl', 'rb') as data:
     avail_metrics = pickle.loads(data.read())
@@ -54,21 +57,23 @@ size_train_dataset = X_train.shape[0]
 size_valid_dataset = X_valid.shape[0]
 
 # Network Hyperparameters
-p = {'coarse_dim': [256, 512],
+p = {'coarse_dim': [128, 256, 512],
      'dropout':[0.05, 0.1, 0.15],
-     'kernel_size':[3, 4, 6],
-     'batch_size':[32*GPU, 64*GPU],
+     'kernel_size':[3, 4, 6, 9],
+     'batch_size':[16*GPU, 32*GPU, 64*GPU],
      'activation': [ReLU(), LeakyReLU(), ELU()],
      'final_activation': ['sigmoid', 'softmax'],
      'lr':[10**(-i) for i in range(5,7)],
-     'optimizer': [Adam(), RMSprop()],
+     'optimizer': [Adam(), RMSprop(), Nadam()],
      'epochs':[100],
-     'loss':[avail_metrics['balanced_cross_entropy'], avail_metrics['binary_crossentropy']],
+     'loss':[avail_metrics['balanced_cross_entropy'], avail_metrics['binary_crossentropy'], logcosh],
      'depth': [3,4]
     }
 
 # Network to optimize
 def TestModel(x_train, y_train, x_val, y_val, par):
+    from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
+
     with tf.device("/cpu:0"):
         opt_model = Unet(img_shape=np.append(IM_SHAPE, 1), params=par, path=PATH_OUT)
 
@@ -82,13 +87,30 @@ def TestModel(x_train, y_train, x_val, y_val, par):
             trained_model = load_model('%smodel-sem21cm_ep%d.h5' %(PATH_MODEL, MODEL_EPOCH), custom_objects=cb)
 
             # copy weight in optimization model
-            opt_model.set_weights(trained_model.get_weights()) 
-    
+            opt_model.set_weights(trained_model.get_weights())
+
     opt_model = multi_gpu_model(opt_model, gpus=GPU)
-    opt_model.compile(optimizer=par['optimizer'], loss=par['loss'])
+    
+    METRICS = [r2score, precision, recall, iou]
+    opt_model.compile(optimizer=par['optimizer'](lr=lr_normaliser(par['lr'], par['optimizer'])), loss=par['loss'], metrics=METRICS)
     
     results = opt_model.fit(x=x_train, y=y_train, batch_size=par['batch_size'], epochs=par['epochs'], validation_data=(X_valid, y_valid), shuffle=True)
     
     return results, opt_model
 
-scan_object = talos.Scan(X_train, y_train, params=p, model=TestModel, experiment_name=PATH_OUT+'opt_unet', fraction_limit=.001)
+scan_object = talos.Scan(X_train, y_train, 
+                         params=p, 
+                         model=TestModel, 
+                         experiment_name=PATH_OUT+'opt_unet',
+                         reduction_metric='val_loss',
+                         fraction_limit=0.5,
+                         random_method='latin_improved')
+#scan_object = talos.Scan(X_train, y_train, params=p, model=TestModel, experiment_no='1', grid_downsample=0.01)
+
+# accessing the results data frame
+print(scan_object.data.head())
+
+# access the summary details
+print(scan_object.details)
+
+scan_object.learning_entropy.to_csv(PATH_OUT+'entropy.csv')
