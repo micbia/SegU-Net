@@ -16,7 +16,7 @@ from utils_network.networks import Unet
 from utils_network.metrics import iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy, weighted_binary_crossentropy
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
 from utils_network.data_generator import RotateGenerator, DataGenerator
-from utils.other_utils import get_data, get_batch, save_cbin
+from utils.other_utils import get_data, get_data_lc, get_batch, save_cbin
 from utils_plot.plotting import plot_loss
 
 # title
@@ -88,8 +88,8 @@ if(DATA_AUGMENTATION != 'NOISESMT'):
     else:
         print('Load dataset ...') 
         #X, y = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
-        X, y = get_batch(path=PATH_TRAIN, img_shape=IM_SHAPE, size=30000, dataset_size=30000)
-        #X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
+        #X, y = get_batch(path=PATH_TRAIN, img_shape=IM_SHAPE, size=30000, dataset_size=30000)
+        X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
         X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
         size_train_dataset = X_train.shape[0]
 else:

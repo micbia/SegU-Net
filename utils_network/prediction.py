@@ -102,6 +102,7 @@ def SegUnet21cmPredict(unet, x, TTA=False):
             cube = np.rot90(opt(x), k=rot, axes=ax_tup) 
             X = cube[np.newaxis, ..., np.newaxis]
         else:
+            #lc = np.rot90(opt(x), k=rot, axes=ax_tup)
             X = x[np.newaxis, ..., np.newaxis]
 
         for j in range(x.shape[0]):

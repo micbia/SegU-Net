@@ -10,19 +10,25 @@ from glob import glob
 from tqdm import tqdm
 from mpi4py import MPI
 
-path_out = sys.argv[1]
-arr_idx = int(sys.argv[2])
-path_out += '/' if path_out[-1]!='/' else ''
+#path_out = sys.argv[1]
+path_out = '/cosma6/data/dp004/dc-bian1/inputs/dataLC_128_100821/'
 
-path_chache = '/gpfs/scratch/userexternal/mbianco0/21cmFAST-cache/'
-p21.config['direc'] = path_chache
+#arr_idx = int(sys.argv[2])
+path_out += '/' if path_out[-1]!='/' else ''
 
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 nprocs = comm.Get_size()
 
-#loop_start, loop_end = 6999, 7000
-loop_start, loop_end = np.loadtxt('parameters/todo_r%d.txt' %arr_idx, dtype=int)
+path_chache = '/cosma6/data/dp004/dc-bian1/_cache%d/' %rank
+try: 
+    os.makedirs(path_chache)
+except:
+    pass
+p21.config['direc'] = path_chache
+
+loop_start, loop_end = 0, 10000
+#loop_start, loop_end = np.loadtxt('parameters/todo_r%d.txt' %arr_idx, dtype=int)
 perrank = (loop_end-loop_start)//nprocs
 
 def get_dir_size(dir):
@@ -107,10 +113,10 @@ while i < i_end:
     if(xn > 0.1 and xn <= 0.8):
         print('processor: %d/%d   idx=%d\n z=%.3f, xn=%.3f, eff_fact=%.3f, Rmfp=%.3f, Tvir=%.3f' %(rank, nprocs, i, z, xn, eff_fact, Rmfp, Tvir))
 
+        """
         dT = cube.brightness_temp
         dT1 = t2c.subtract_mean_signal(signal=dT, los_axis=2)
         
-        """
         # calculate uv-coverage 
         file_uv, file_Nant = 'uv_coverage_%d/uvmap_z%.3f.npy' %(params['HII_DIM'], z), 'uv_coverage_%d/Nantmap_z%.3f.npy' %(params['HII_DIM'], z)
 
@@ -138,9 +144,9 @@ while i < i_end:
         """
         # mask are saved such that 1 in neutral region and 0 in ionized region
         t2c.save_cbin(path_out+'data/xH_21cm_i%d.bin' %i, cube.xH_box)
-        t2c.save_cbin(path_out+'data/dT1_21cm_i%d.bin' %i, dT1)
+        t2c.save_cbin(path_out+'data/dT1_21cm_i%d.bin' %i, cube.brightness_temp)
         
-        if(i%50):
+        if(False):
             ps, ks, n_modes = t2c.power_spectrum_1d(dT, kbins=20, box_dims=cube.user_params.BOX_LEN,return_n_modes=True, binning='log')
             idx=params['HII_DIM']//2
 
@@ -180,14 +186,14 @@ while i < i_end:
         if(get_dir_size(path_out) / 1e9 >= 15):
             if(rank == 0):
                 try:
-                    strd = np.loadtxt(path_out+'written.txt', dtype=str, delimiter='\n')
+                    strd = np.loadtxt('%swritten_%d.txt' %(path_out, rank), dtype=str, delimiter='\n')
                 except:
                     strd = np.array([])
 
                 os.system('tar -czvf %s_part%d.tar.gz %s' %(path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1, path_out[path_out[:-1].rfind('/')+1:-1]))
                 os.system('rm %sdata/*.bin' %path_out)
 
-                np.savetxt(path_out+'written.txt', np.append(strd, ['%s written %s_part%d.tar.gz' %(datetime.now().strftime('%d/%m/%Y %H:%M:%S'), path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1)]), delimiter='\n', fmt='%s')
+                np.savetxt('%swritten_%d.txt' %(path_out, rank), np.append(strd, ['%s written %s_part%d.tar.gz' %(datetime.now().strftime('%d/%m/%Y %H:%M:%S'), path_out[path_out[:-1].rfind('/')+1:-1], strd.size+1)]), delimiter='\n', fmt='%s')
             print(' \n Data created exeed 15GB. Compression completed...')
             comm.Barrier()
 

@@ -38,7 +38,8 @@ def get_extend(a):
 
 def get_data_lc(path, fname=None, shuffle=False):
     lc_dT = read_cbin(filename=path+fname+'_dT3.dat', dimensions=3)
-    lc_mask = read_cbin(filename=path+fname+'_mask.dat', dimensions=3)
+    #lc_mask = read_cbin(filename=path+fname+'_mask.dat', dimensions=3)
+    lc_mask = read_cbin(filename=path+fname+'_dT.dat', dimensions=3)
     
     size = lc_dT.shape[-1]
 

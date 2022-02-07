@@ -45,7 +45,7 @@ class NetworkConfig:
             self.resume_epoch   = eval(resumeconfig['RESUME_EPOCH'])
         except:
             f = open(CONFIG_FILE, 'a')
-            f.write('\n\n[RESUME]')
+            f.write('\n[RESUME]')
             f.write('\nRESUME_PATH = None')
             f.write('\nBEST_EPOCH = 0')
             f.write('\nRESUME_EPOCH = 0')
@@ -69,6 +69,7 @@ class PredictionConfig:
         trainconfig = config['TRAINING']
         self.path_pred      = trainconfig['DATASET_PATH']
         self.pred_data      = trainconfig['PRED_DATA']
+        self.loss           = trainconfig['LOSS']
         self.img_shape      = tuple(np.array(eval(trainconfig['IMG_SHAPE']), dtype=int))
         if(', ' in trainconfig['METRICS']):
             self.metrics    = np.append(trainconfig['METRICS'].split(', '),trainconfig['LOSS'])

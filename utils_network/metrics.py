@@ -1,12 +1,35 @@
-from keras import backend as K
+
+import tensorflow.keras.backend as K    #from keras import backend as K
 import numpy as np
 import tensorflow as tf
-import numba
 
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.framework import ops 
 from tensorflow.python.ops import array_ops 
 from tensorflow.python.ops import math_ops 
+
+def precision(y_true, y_pred):
+    # custom Precision metrics
+    y_true, y_pred = K.clip(y_true, K.epsilon(), 1-K.epsilon()), K.clip(y_pred, K.epsilon(), 1-K.epsilon())
+    TP = K.sum(y_pred * y_true)
+    FP = K.sum(y_pred * (1 - y_true))
+    return TP/(TP + FP + K.epsilon())
+
+
+def recall(y_true, y_pred):
+    # custom recall metrics
+    y_true, y_pred = K.clip(y_true, K.epsilon(), 1-K.epsilon()), K.clip(y_pred, K.epsilon(), 1-K.epsilon())
+    TP = K.sum(y_pred * y_true)
+    FN = K.sum((1 - y_pred) * y_true)
+    return TP/(TP + FN + K.epsilon())
+
+
+def r2score(y_true, y_pred):
+    # custom R2-score metrics
+    SS_res =  K.sum(K.square(y_true - y_pred)) 
+    SS_tot = K.sum(K.square(y_true - K.mean(y_true))) 
+    return 1 - SS_res/(SS_tot + K.epsilon())
+
 
 def weighted_binary_crossentropy(y_true, y_pred):
     # Calculate the binary crossentropy
@@ -18,6 +41,7 @@ def weighted_binary_crossentropy(y_true, y_pred):
     weighted_b_ce = weight_vector * b_ce
     # Return the mean error
     return K.mean(weighted_b_ce)
+
 
 def sigmoid_balanced_cross_entropy_with_logits(_sentinel=None, labels=None, logits=None, beta=None, name=None):
     nn_ops._ensure_xent_args("sigmoid_cross_entropy_with_logits", _sentinel,labels, logits)
@@ -48,10 +72,6 @@ def balanced_cross_entropy(y_true, y_pred):
 
 
 def tversky_loss(y_true, y_pred, beta=0.7):
-    """
-    Generalization of Dice’s coefficient. It adds a weight to FP (false positives) and FN (false negatives).
-    For example for beta=0.5 we obtain the regular dice coefficient (see: https://arxiv.org/abs/1706.05721)
-    """
     numerator = tf.reduce_sum(y_true * y_pred, axis=-1)
     denominator = y_true * y_pred + beta * (1 - y_true) * y_pred + (1 - beta) * y_true * (1 - y_pred)
 
@@ -95,20 +115,20 @@ def dice_coef(y_true, y_pred, smooth=1):
 def dice_coef_loss(y_true, y_pred):
     return 1-dice_coef(y_true, y_pred)
 
-@numba.jit
+
 def phi_coef(ytrue, ypred): 
     ytrue, ypred = (ytrue.squeeze()).flatten(), (ypred.squeeze()).flatten()
 
-    TP, TN, FP, FN = 0, 0, 0, 0
+    TP, TN, FP, FN = 0., 0., 0., 0.
     for t, p in zip(ytrue, ypred.round()):
         if(t == 1 and p == 1):
-            TP += 1  
+            TP += 1.
         elif(t == 0 and p == 0):
-            TN += 1  
+            TN += 1. 
         elif(t == 0 and p == 1):
-            FP += 1
+            FP += 1.
         else:
-            FN += 1  
+            FN += 1. 
     
     mcc = (TP*TN-FP*FN)/np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)) 
     return mcc
