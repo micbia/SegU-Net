@@ -4,63 +4,44 @@ from glob import glob
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import Callback
 
-class HistoryCheckpoint(Callback):
+class HistoryCheckpoint(callbacks.Callback):
     def __init__(self, filepath='./', verbose=0, save_freq=1, in_epoch=0):
         self.verbose = verbose
         self.filepath = filepath
         self.save_freq = save_freq
-        self.stor_arr = {}
+        self.stor_arr = []
         self.prev_epoch = 0
         self.in_epoch = in_epoch
-        self.count = 0
 
     def on_train_begin(self, logs=None):
         if(self.in_epoch != 0):
-            print('Resuming from Epoch %d...' %(self.in_epoch))
-            
-            for metric in glob(self.filepath+'*.txt'):
-                mname = metric[metric.rfind('/')+1:metric.find('_ep')]
-                try:
-                    self.stor_arr[mname] = np.loadtxt('%s_ep-%d.txt' %(self.filepath+mname, self.in_epoch))
-                except:
-                    self.stor_arr[mname] = np.loadtxt(metric)[:self.in_epoch-1]
-            
-            self.prev_epoch = int(metric[metric.rfind('-')+1: metric.find('.txt')])
+            print('Resuming from Epoch %d...' %self.in_epoch)
+            self.prev_epoch = self.in_epoch
 
     def on_epoch_end(self, epoch, logs=None):
-        epoch += 1
+        if(epoch == self.in_epoch): self.stor_arr = [[] for i in range(len(logs))]     # initializate array
+        
         fname = self.filepath+'%s_ep-%d.txt'
 
-        if(epoch % self.save_freq == 0 and epoch != 1):
-            for mname in logs:
-                if(self.stor_arr == {}):
-                    self.stor_arr = logs
-                else:
-                    self.stor_arr[mname] = np.append(self.stor_arr[mname], logs[mname])
-                    pass
+        if(epoch % self.save_freq == 0 and epoch != self.in_epoch): 
+            for i, val in enumerate(logs):
+                self.stor_arr[i] = np.append(self.stor_arr[i], logs[val])
 
-                if(self.in_epoch == 0 and self.count == 0):
-                    np.savetxt(fname %(mname, epoch), self.stor_arr[mname])
-                elif(self.in_epoch != 0 and self.count == 0):
-                    np.savetxt(fname %(mname, epoch), self.stor_arr[mname])     # save
-                    os.remove(fname %(mname, self.prev_epoch))                  # delete old save
+                if(os.path.isfile(fname %(val, self.prev_epoch))):
+                    chekp_arr = np.loadtxt(fname %(val, self.prev_epoch)) # load previous save
+                    chekp_arr = np.append(chekp_arr, self.stor_arr[i])    # update 
+                    np.savetxt(fname %(val, epoch+1), chekp_arr)            # save
+                    os.remove(fname %(val, self.prev_epoch))              # delete old save
                 else:
-                    chekp_arr = np.loadtxt(fname %(mname, self.prev_epoch))     # load previous save
-                    os.remove(fname %(mname, self.prev_epoch))                  # delete old save
-                    chekp_arr = np.append(chekp_arr, self.stor_arr[mname])      # update 
-                    np.savetxt(fname %(mname, epoch), chekp_arr)                # save
+                    np.savetxt(fname %(val, epoch+1), self.stor_arr[i])
             
-            self.count += 1
-            self.prev_epoch = epoch
-            for mname in logs:
-                self.stor_arr = {}         # empty storing array
+            self.prev_epoch = epoch+1
+            self.stor_arr = [[] for i in range(len(logs))]          # empty storing array
 
-            if(self.verbose): print('Updated Logs checkpoints for epoch %d.' %epoch)
+            if(self.verbose): print('Updated Logs checkpoints for epoch %d.' %(epoch+1))
         else:
-            if(self.stor_arr == {}):
-                self.stor_arr = logs
-            else:
-                self.stor_arr[mname] = np.append(self.stor_arr[mname], logs[mname])
+            for j, val in enumerate(logs):
+                self.stor_arr[j] = np.append(self.stor_arr[j], logs[val])
 
 
 class ReduceLR(Callback):
