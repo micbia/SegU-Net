@@ -8,6 +8,27 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops 
 from tensorflow.python.ops import math_ops 
 
+def matthews_coef(y_true, y_pred):
+    # thie module is to use on tensors (so for Tensorflow or Keras)
+    y_pred_pos = K.round(K.clip(y_pred, 0, 1))
+    y_pred_neg = 1 - y_pred_pos
+
+    y_pos = K.round(K.clip(y_true, 0, 1))
+    y_neg = 1 - y_pos
+
+    # define true positive and true negative
+    tp = K.sum(y_pos * y_pred_pos)
+    tn = K.sum(y_neg * y_pred_neg)
+
+    # define false positive and false negative
+    fp = K.sum(y_neg * y_pred_pos)
+    fn = K.sum(y_pos * y_pred_neg)
+
+    numerator = (tp * tn - fp * fn)
+    denominator = K.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+    return numerator / (denominator + K.epsilon())
+
+
 def precision(y_true, y_pred):
     # custom Precision metrics
     y_true, y_pred = K.clip(y_true, K.epsilon(), 1-K.epsilon()), K.clip(y_pred, K.epsilon(), 1-K.epsilon())

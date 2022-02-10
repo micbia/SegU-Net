@@ -15,7 +15,7 @@ from tests.networks_test import Unet
 from sklearn.model_selection import train_test_split
 from utils.other_utils import get_data, get_batch, get_data_lc
 from config.net_config import NetworkConfig
-from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, phi_coef, balanced_cross_entropy
+from utils_network.metrics import r2score, precision, recall, iou, iou_loss, dice_coef, dice_coef_loss, matthews_coef, balanced_cross_entropy
 
 with open('utils_network/avail_metrics.pkl', 'rb') as data:
     avail_metrics = pickle.loads(data.read())
@@ -37,7 +37,7 @@ if isinstance(DATASET_PATH, list):
 else:
     PATH_TRAIN = IO_PATH+'inputs/'+DATASET_PATH
     PATH_VALID = PATH_TRAIN
-PATH_OUT = 'tests/'
+PATH_OUT = 'tests/test2/'
 
 # Load Data
 IM_SHAPE = conf.img_shape
@@ -48,27 +48,61 @@ if(isinstance(DATASET_PATH, str)):
     X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=RANDOM_SEED)
 else:
     print('Load images ...') 
-    X_train, y_train = get_data_lc(path=PATH_TRAIN, i=0, shuffle=True)
+    #X_train, y_train = get_data_lc(path=PATH_TRAIN, i=0, shuffle=True)
+    for i in range(9):
+        if(i == 0):
+            X_train, y_train = get_data_lc(path=PATH_TRAIN, i=i, shuffle=True)
+        else:
+            X_tmp, y_tmp = get_data_lc(path=PATH_TRAIN, i=i, shuffle=True)
+            X_train, y_train = np.vstack((X_train, X_tmp)), np.vstack((y_train, y_tmp))
     print('Load masks ...') 
-    X_valid, y_valid = get_data_lc(path=PATH_VALID, i=10, shuffle=True)
-
+    #X_valid, y_valid = get_data_lc(path=PATH_VALID, i=10, shuffle=True)
+    for i in range(9, 11):
+        if(i == 9):
+            X_valid, y_valid = get_data_lc(path=PATH_VALID, i=i, shuffle=True)
+        else:
+            X_tmp, y_tmp = get_data_lc(path=PATH_VALID, i=i, shuffle=True)
+            X_valid, y_valid = np.vstack((X_valid, X_tmp)), np.vstack((y_valid, y_tmp))
 
 size_train_dataset = X_train.shape[0]
 size_valid_dataset = X_valid.shape[0]
+print(size_train_dataset, size_valid_dataset)
 
 # Network Hyperparameters
+p = {#'coarse_dim': [128, 256, 512],
+     'coarse_dim': [256]
+     'dropout':[0.05, 0.1, 0.15],
+     'kernel_size':[3, 5],
+     'activation': [ReLU(), LeakyReLU()],
+     'final_activation': ['sigmoid'], 
+     'optimizer': [Adam], 
+     #'depth': [3, 4]
+     'depth':[4]
+    }
+
+"""
 p = {'coarse_dim': [128, 256, 512],
      'dropout':[0.05, 0.1, 0.15],
-     'kernel_size':[3, 4, 6, 9],
-     'batch_size':[16*GPU, 32*GPU, 64*GPU],
+     'kernel_size':[3, 4, 6],
+     #'batch_size':[16*GPU, 32*GPU, 64*GPU],
      'activation': [ReLU(), LeakyReLU(), ELU()],
      'final_activation': ['sigmoid', 'softmax'],
-     'lr':[10**(-i) for i in range(5,7)],
-     'optimizer': [Adam(), RMSprop(), Nadam()],
-     'epochs':[100],
-     'loss':[avail_metrics['balanced_cross_entropy'], avail_metrics['binary_crossentropy'], logcosh],
+     #'lr':[10**(-i) for i in range(5,7)],
+     'optimizer': [Adam, RMSprop, Nadam],
+     #'epochs':[100],
+     #'loss':[avail_metrics['balanced_cross_entropy'], avail_metrics['binary_crossentropy']],
      'depth': [3,4]
     }
+"""
+
+# save hyperparemeters sample
+with open(PATH_OUT+'hyperparameters_space.json', 'w') as file:
+    par = p.copy()
+    for var in par:
+        if(var == 'activation' or var == 'optimizer'):
+            par[var] = str(p[var])
+    file.write(json.dumps(par))
+
 
 # Network to optimize
 def TestModel(x_train, y_train, x_val, y_val, par):
@@ -91,19 +125,19 @@ def TestModel(x_train, y_train, x_val, y_val, par):
 
     opt_model = multi_gpu_model(opt_model, gpus=GPU)
     
-    METRICS = [r2score, precision, recall, iou]
-    opt_model.compile(optimizer=par['optimizer'](lr=lr_normaliser(par['lr'], par['optimizer'])), loss=par['loss'], metrics=METRICS)
+    METRICS = [matthews_coef, precision, recall, iou] # [matthews_coef, precision, recall, iou]
+    opt_model.compile(optimizer=par['optimizer'](lr=lr_normalizer(1e-7, par['optimizer'])), loss=avail_metrics['balanced_cross_entropy'], metrics=METRICS)
     
-    results = opt_model.fit(x=x_train, y=y_train, batch_size=par['batch_size'], epochs=par['epochs'], validation_data=(X_valid, y_valid), shuffle=True)
+    results = opt_model.fit(x=x_train, y=y_train, batch_size=32*GPU, epochs=100, validation_data=[X_valid, y_valid], shuffle=True)
     
     return results, opt_model
 
 scan_object = talos.Scan(X_train, y_train, 
                          params=p, 
                          model=TestModel, 
-                         experiment_name=PATH_OUT+'opt_unet',
+                         experiment_name=PATH_OUT,
                          reduction_metric='val_loss',
-                         fraction_limit=0.5,
+                         #fraction_limit=1,
                          random_method='latin_improved')
 #scan_object = talos.Scan(X_train, y_train, params=p, model=TestModel, experiment_no='1', grid_downsample=0.01)
 

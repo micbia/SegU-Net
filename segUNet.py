@@ -60,8 +60,8 @@ RESUME_PATH = conf.resume_path
 
 if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
     PATH_OUT = RESUME_PATH
-    RESUME_MODEL = '%smodel-sem21cm_ep%d.h5' %(RESUME_PATH+'checkpoints/', BEST_EPOCH)
-    RESUME_LR = np.loadtxt(glob(RESUME_PATH+'outputs/lr_ep-*.txt')[0])[RESUME_EPOCH-1]
+    RESUME_MODEL = '%scheckpoints/model-sem21cm_ep%d.h5' %(RESUME_PATH, BEST_EPOCH)
+    RESUME_LR = np.loadtxt('%soutputs/lr_ep-%d.txt' %(RESUME_PATH, RESUME_EPOCH))[RESUME_EPOCH-1]
 else:
     RESUME_MODEL = './foo'
     if(len(IM_SHAPE) == 3):
@@ -124,13 +124,34 @@ if(os.path.exists(RESUME_MODEL)):
         model = load_model(RESUME_MODEL)
     except:
         cb = {} 
-        #for func in [iou, dice_coef, 'binary_accuracy']:
+        for func in np.append(METRICS, LOSS):
+            if not isinstance(func, str): 
+                cb[func.__name__] = func 
+        model = load_model(RESUME_MODEL, custom_objects=cb)
+
+    """ TODO: not sure if loaded model is distributed on GPU
+    try:
+        if(GPU == None or GPU == 0):
+            model = load_model(RESUME_MODEL)
+        else:
+            with tf.device("/cpu:0"):
+                model = load_model(RESUME_MODEL)
+            model = multi_gpu_model(model, gpus=GPU)
+            print('\nModel on %d GPU\n' %GPU)
+    except:
+        cb = {} 
         for func in np.append(METRICS, LOSS): 
              if not isinstance(func, str): 
                 cb[func.__name__] = func 
-
-        model = load_model(RESUME_MODEL, custom_objects=cb)
-    
+        if(GPU == None or GPU == 0):
+            model = load_model(RESUME_MODEL)
+        else:
+            with tf.device("/cpu:0"):
+                model = load_model(RESUME_MODEL, custom_objects=cb)
+            model = multi_gpu_model(model, gpus=GPU)
+            print('\nModel on %d GPU\n' %GPU)
+    model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+    """
     if(RECOMPILE):
         model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, metrics=METRICS)
         resume_metrics = model.evaluate(X_valid, y_valid, verbose=1)
@@ -141,8 +162,8 @@ if(os.path.exists(RESUME_MODEL)):
         print(msg)
         print("Resume Learning rate: %.3e\n" %(tf.keras.backend.get_value(model.optimizer.lr)))
     else:
-        tf.keras.backend.set_value(model.optimizer.lr, RESUME_LR)       # change learning rate
-        resume_loss = np.loadtxt(glob(RESUME_PATH+'outputs/val_loss_ep-*.txt')[0])[BEST_EPOCH-1]
+        tf.keras.backend.set_value(model.optimizer.lr, RESUME_LR)       # resume learning rate
+        resume_loss = np.loadtxt('%soutputs/val_loss_ep-%d.txt' %(RESUME_PATH, RESUME_EPOCH))[BEST_EPOCH-1]
         print('\nScore resumed model:\n loss: %.3f' %resume_loss)
 else: 
     print('\nModel created')
@@ -150,21 +171,14 @@ else:
     if(GPU == None or GPU == 0):
         model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         #model = LSTM_Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
-        model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
     else:
-        print('\nModel on GPU\n')
+        print('\nModel on %d GPU\n' %GPU)
         with tf.device("/cpu:0"):
             model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         model = multi_gpu_model(model, gpus=GPU)
-        model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+    
+    model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
-        """
-        strategy = tf.distribute.MirroredStrategy()
-        with strategy.scope():
-            # GPU parallelisation from: https://keras.io/getting_started/faq/#how-can-i-train-a-keras-model-on-multiple-gpus-on-a-single-machine
-            model = Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)    
-            model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
-        """
 # define callbacks
 callbacks = [EarlyStopping(patience=15, verbose=1),
              ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH), best=resume_loss),
@@ -183,10 +197,8 @@ if not isinstance(DATA_AUGMENTATION, str):
 else:
     if(DATA_AUGMENTATION == 'ROT'):
         print('\nData augmentation: random rotation of 90, 180, 270 or 360 deg for x,y or z-axis...\n')
-        train_generator = RotateGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE,
-                                        rotate_axis='random', rotate_angle='random', shuffle=True)
-        valid_generator = RotateGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE,
-                                        rotate_axis='random', rotate_angle='random', shuffle=True)
+        train_generator = RotateGenerator(data=X_train, label=y_train, batch_size=BATCH_SIZE, rotate_axis='random', rotate_angle='random', shuffle=True)
+        valid_generator = RotateGenerator(data=X_valid, label=y_valid, batch_size=BATCH_SIZE, rotate_axis='random', rotate_angle='random', shuffle=True)
     elif(DATA_AUGMENTATION == 'NOISESMT'):
         print('\nData augmentation: Add noise cube and smooth 21cm cube...\n')
         train_generator = DataGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)

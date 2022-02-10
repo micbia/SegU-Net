@@ -1,0 +1,2 @@
+round_epochs,loss,r2score,precision,recall,iou,val_loss,val_r2score,val_precision,val_recall,val_iou,activation,batch_size,coarse_dim,depth,dropout,epochs,final_activation,kernel_size,loss,lr,optimizer
+100,0.5199589133262634,-0.4819450378417969,0.6399016976356506,0.4672454297542572,0.36994466185569763,0.0,0.0,0.0,0.0,0.0,<tensorflow.python.keras.layers.advanced_activations.ELU object at 0x7f3498384430>,256,512,4,0.1,100,sigmoid,3,<function balanced_cross_entropy at 0x7f349837c9d0>,1e-06,<class 'tensorflow.python.keras.optimizer_v2.adam.Adam'>

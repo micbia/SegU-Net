@@ -1,0 +1,5 @@
+# GPUs, runtime (per epoch in sec)
+8	2367
+4	2635
+2	3072
+1	3374	

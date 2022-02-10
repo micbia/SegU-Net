@@ -14,17 +14,13 @@ plt.rcParams['ytick.right'] = True
 script, path = argv
 os.chdir(path)
 
-def delete_duplicate(data):
-    return np.array(list(dict.fromkeys(data)))
-
 # Load Data
 name_val_metric = glob('val_*.txt') 
 name_metric = [sf[4:] for sf in name_val_metric] 
 epoch = int(name_metric[0][name_metric[0].rfind('-')+1:name_metric[0].rfind('.')]) 
 
-i_tf = np.append([True, True], [True, False]*(epoch-2))
-loss, val_loss = np.loadtxt('loss_ep-%d.txt' %epoch), delete_duplicate(np.loadtxt('val_loss_ep-%d.txt' %epoch)) 
-lr = np.loadtxt('lr_ep-%d.txt' %epoch)[i_tf[1:]]
+loss, val_loss = np.loadtxt('loss_ep-%d.txt' %epoch), np.loadtxt('val_loss_ep-%d.txt' %epoch)
+lr = np.loadtxt('lr_ep-%d.txt' %epoch)
 
 idx_best_mode = np.argmin(val_loss)
 print('best loss (i=%d):\t%.3e' %(idx_best_mode, np.min(val_loss)))
@@ -54,7 +50,7 @@ ax2 = plt.subplot(1,2,2)
 ax2.set_ylabel('Accuracy'), ax2.set_xlabel('Epoch')
 for i_nm, (nm, vnm) in enumerate(zip(name_metric, name_val_metric)): 
     if not('loss' in nm):
-        metric, val_metric = delete_duplicate(np.loadtxt(nm)), delete_duplicate(np.loadtxt(vnm))
+        metric, val_metric = np.loadtxt(nm), np.loadtxt(vnm)
         lb = nm[:nm.rfind('_')]
         ax2.plot(val_metric, color='tab:'+colours[i_cl], ls='--')
         ax2.plot(metric, color='dark'+colours[i_cl], label=lb)

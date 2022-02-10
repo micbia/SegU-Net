@@ -10,6 +10,13 @@ import sys
 sys.path.append("..")
 from tqdm import tqdm
 
+def get_axis_locs(varr, to_round=10, step=5, fmt=int):    
+    v_max = int(round(varr.max()/to_round)*to_round) if int(round(varr.max()/to_round)*to_round) <= varr.max() else int(round(varr.max()/to_round)*to_round)-to_round
+    v_min = int(round(varr.min()/to_round)*to_round) if int(round(varr.min()/to_round)*to_round) >= varr.min() else int(round(varr.min()/to_round)*to_round)+to_round
+    v_plot = np.arange(v_min, v_max+step, step)
+    loc_v = np.array([np.argmin(abs(varr-v_plot[i])) for i in range(v_plot.size)]).astype(fmt)
+    return loc_v
+
 # Plots Predictions
 def plot_sample(X, y, preds, idx):
     fig, ax = plt.subplots(1, 2, figsize=(20, 10))
@@ -100,14 +107,6 @@ def plot_slice(i, BOX_LEN, path_out):
     plt.savefig('%simages/slice_i%d.png' %(path_out, i), bbox_inches='tight')
     print(' Plot saved.')
     plt.close()
-
-
-def get_axis_locs(varr, to_round=10, step=5, fmt=int):    
-    v_max = int(round(varr.max()/to_round)*to_round) if int(round(varr.max()/to_round)*to_round) <= varr.max() else int(round(varr.max()/to_round)*to_round)-to_round
-    v_min = int(round(varr.min()/to_round)*to_round) if int(round(varr.min()/to_round)*to_round) >= varr.min() else int(round(varr.min()/to_round)*to_round)+to_round
-    v_plot = np.arange(v_min, v_max+step, step)
-    loc_v = np.array([np.argmin(abs(varr-v_plot[i])) for i in range(v_plot.size)]).astype(fmt)
-    return loc_v
 
 
 def plot_lc(i, BOX_LEN, path_out, tobs=1000):
