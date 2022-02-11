@@ -8,9 +8,6 @@ from tensorflow.keras.layers import MaxPooling2D, GlobalMaxPool2D, MaxPooling3D
 from tensorflow.keras.layers import TimeDistributed
 from tensorflow.keras.utils import plot_model
 
-from functools import partial
-
-
 def Unet(img_shape, coarse_dim, ks=3, dropout=0.05, path='./'):
     # print message at runtime
     if(img_shape[0] == 64 and np.size(img_shape) == 3):
