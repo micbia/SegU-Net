@@ -5,8 +5,8 @@ from tensorflow.keras.layers import Input, BatchNormalization, Activation, Dropo
 from tensorflow.keras.layers import Conv2D, Conv2DTranspose, Conv3D, Conv3DTranspose
 from tensorflow.keras.layers import ConvLSTM2D #, ConvLSTM3D only from tf v2.6.0
 from tensorflow.keras.layers import MaxPooling2D, GlobalMaxPool2D, MaxPooling3D
+from tensorflow.keras.layers import TimeDistributed
 from tensorflow.keras.utils import plot_model
-
 
 def Unet(img_shape, coarse_dim, ks=3, dropout=0.05, path='./'):
     # print message at runtime
@@ -265,170 +265,125 @@ def LSTM_Unet(img_shape, coarse_dim, ks=3, dropout=0.05, path='./'):
         a = BatchNormalization(name='%s_BN2' %layer_name)(a)
         a = Activation("relu", name='relu_%s_A2' %layer_name)(a)
         return a
-    
+
+    if(np.size(img_shape) == 4):
+        # 2-D network
+        Conv = Conv2D_Layers
+        ConvLSTM = ConvLSTM2D
+
+        def ConvTranspose(*args, **kwargs):
+            # I have to isolate "name", as it needs to be passed to TimeDistributed
+            if "name" in kwargs.keys():
+                name = kwargs.pop("name")
+            else:
+                name = None
+            return TimeDistributed(
+                Conv2DTranspose(*args, **kwargs), 
+                name = name,
+            )
+        def MaxPool(*args, **kwargs):
+            if "name" in kwargs.keys():
+                name = kwargs.pop("name")
+            else:
+                name = None
+            return TimeDistributed(
+                MaxPooling2D(*args, **kwargs),
+                name = name,
+            )
+    elif(np.size(img_shape) == 5):
+        # 3-D network
+        Conv = Conv3D_Layers
+        ConvLSTM = ConvLSTM3D
+
+        def ConvTranspose(*args, **kwargs):
+            if "name" in kwargs.keys():
+                name = kwargs.pop("name")
+            else:
+                name = None
+            return TimeDistributed(
+                Conv3DTranspose(*args, **kwargs), 
+                name = name,
+            )
+        def MaxPool(*args, **kwargs):
+            if "name" in kwargs.keys():
+                name = kwargs.pop("name")
+            else:
+                name = None
+            return TimeDistributed(
+                MaxPooling3D(*args, **kwargs),
+                name = name,
+            )
+
     img_input = Input(shape=img_shape, name='Image')
         
     # U-Net Encoder - upper level
-    if(np.size(img_shape) == 4):
-        # 2-D network
-        e1c = Conv2D_Layers(prev_layer=img_input, nr_filts=int(coarse_dim/16),
-                            kernel_size=ks, layer_name='E1')
-        e1 = MaxPooling3D(pool_size=(1, 2, 2), name='E1_P')(e1c)
-        e1 = Dropout(dropout*0.5, name='E1_D2')(e1)
-    elif(np.size(img_shape) == 5):
-        # 3-D network
-        e1c = Conv3D_Layers(prev_layer=img_input, nr_filts=int(coarse_dim/16),
-                            kernel_size=(ks, ks, ks), layer_name='E1')
-        e1 = MaxPooling3D(pool_size=(2, 2, 2), name='E1_P')(e1c)
-        e1 = Dropout(dropout*0.5, name='E1_D2')(e1)
+    e1c = Conv(prev_layer=img_input, nr_filts=int(coarse_dim/16), kernel_size=ks, layer_name='E1')
+    e1 = MaxPool(pool_size=2, name='E1_P')(e1c)
+    e1 = Dropout(dropout*0.5, name='E1_D2')(e1)
 
     # U-Net Encoder - second level
-    if(np.size(img_shape) == 4):
-        # 2-D network
-        e2c = Conv2D_Layers(prev_layer=e1, nr_filts=int(coarse_dim/8),
-                            kernel_size=ks, layer_name='E2')
-        e2 = MaxPooling3D(pool_size=(1, 2, 2), name='E2_P')(e2c)
-        e2 = Dropout(dropout, name='E2_D2')(e2)
-    elif(np.size(img_shape) == 5):
-        # 3-D network
-        e2c = Conv3D_Layers(prev_layer=e1, nr_filts=int(coarse_dim/8),
-                            kernel_size=(ks, ks, ks), layer_name='E2')
-        e2 = MaxPooling3D(pool_size=(2, 2, 2), name='E2_P')(e2c)
-        e2 = Dropout(dropout, name='E2_D2')(e2)
+    e2c = Conv(prev_layer=e1, nr_filts=int(coarse_dim/8), kernel_size=ks, layer_name='E2')
+    e2 = MaxPool(pool_size=2, name='E2_P')(e2c)
+    e2 = Dropout(dropout, name='E2_D2')(e2)
 
     # U-Net Encoder - third level
-    if(np.size(img_shape) == 4):
-        # 2-D network
-        e3c = Conv2D_Layers(prev_layer=e2, nr_filts=int(coarse_dim/4),
-                            kernel_size=ks, layer_name='E3')
-        e3 = MaxPooling3D(pool_size=(1, 2, 2), name='E3_P')(e3c)
-        e3 = Dropout(dropout, name='E3_D2')(e3) 
-    elif(np.size(img_shape) == 5):
-        # 3-D network
-        e3c = Conv3D_Layers(prev_layer=e2, nr_filts=int(coarse_dim/4),
-                            kernel_size=(ks, ks, ks), layer_name='E3')
-        e3 = MaxPooling3D(pool_size=(2, 2, 2), name='E3_P')(e3c)
-        e3 = Dropout(dropout, name='E3_D2')(e3)  
+    e3c = Conv(prev_layer=e2, nr_filts=int(coarse_dim/4), kernel_size=ks, layer_name='E3')
+    e3 = MaxPool(pool_size=2, name='E3_P')(e3c)
+    e3 = Dropout(dropout, name='E3_D2')(e3) 
 
     if(img_shape[1] >= 64 and img_shape[1] < 128):
         # U-Net Encoder - bottom level
-        if(np.size(img_shape) == 4):
-            # 2-D network
-            b = Conv2D_Layers(prev_layer=e3, nr_filts=int(coarse_dim/2), kernel_size=(ks, ks), layer_name='B')
-            
-            d3 = Conv3DTranspose(filters=int(coarse_dim/4), kernel_size=(ks, ks), 
-                                strides=(1, 2, 2), padding='same', name='D3_DC')(b)
-        elif(np.size(img_shape) == 5):
-            # 3-D network
-            b = Conv3D_Layers(prev_layer=e3, nr_filts=int(coarse_dim/2), kernel_size=(ks, ks, ks), layer_name='B')
-            
-            d3 = Conv3DTranspose(filters=int(coarse_dim/4), kernel_size=(ks, ks, ks), 
-                                strides=(2, 2, 2), padding='same', name='D3_DC')(b)
+        b = Conv(prev_layer=e3, nr_filts=int(coarse_dim/2), kernel_size=ks, layer_name='B')
+        d3 = ConvTranspose(filters=int(coarse_dim/4), kernel_size=2, strides=2, padding='same', name='D3_DC')(b)
+
     elif(img_shape[1] >= 128):
-        if(np.size(img_shape) == 4):
-            # 2-D network
-            # U-Net Encoder - fourth level
-            e4c = Conv2D_Layers(prev_layer=e3, nr_filts=int(coarse_dim/2),
-                                kernel_size=ks, layer_name='E4')
-            e4 = MaxPooling3D(pool_size=(1, 2, 2), name='E4_P')(e4c)
-            e4 = Dropout(dropout, name='E4_D2')(e4)  
-                
-            # U-Net Encoder - bottom level
-            b = Conv2D_Layers(prev_layer=e4, nr_filts=coarse_dim, kernel_size=ks, layer_name='B')
-
-            # U-Net Decoder - fourth level
-            d4 = Conv3DTranspose(filters=int(coarse_dim/2), kernel_size=ks, 
-                                strides=(1, 2, 2), padding='same', name='D4_DC')(b)
-            d4 = concatenate([d4, e4c], name='merge_layer_E4_A2')
-            d4 = Dropout(dropout, name='D4_D1')(d4)
-            d4 = Conv2D_Layers(prev_layer=d4, nr_filts=int(coarse_dim/2), 
-                            kernel_size=ks, layer_name='D4')
-
-            # U-Net Decoder - third level
-            d3 = Conv3DTranspose(filters=int(coarse_dim/4), kernel_size=ks, 
-                                strides=(1, 2, 2), padding='same', name='D3_DC')(d4)
-        elif(np.size(img_shape) == 5):
-            # 3-D network
-            # U-Net Encoder - fourth level
-            e4c = Conv3D_Layers(prev_layer=e3, nr_filts=int(coarse_dim/2),
-                                kernel_size=(ks, ks, ks), layer_name='E4')
-            e4 = MaxPooling3D(pool_size=(2, 2, 2), name='E4_P')(e4c)
-            e4 = Dropout(dropout, name='E4_D2')(e4)  
-                
-            # U-Net Encoder - bottom level
-            b = Conv3D_Layers(prev_layer=e4, nr_filts=coarse_dim, kernel_size=(ks, ks, ks), layer_name='B')
-
-            # U-Net Decoder - fourth level
-            d4 = Conv3DTranspose(filters=int(coarse_dim/2), kernel_size=(ks, ks, ks), 
-                                strides=(2, 2, 2), padding='same', name='D4_DC')(b)
-            d4 = concatenate([d4, e4c], name='merge_layer_E4_A2')
-            d4 = Dropout(dropout, name='D4_D1')(d4)
-            d4 = Conv3D_Layers(prev_layer=d4, nr_filts=int(coarse_dim/2), 
-                            kernel_size=(ks, ks, ks), layer_name='D4')
+        # U-Net Encoder - fourth level
+        e4c = Conv(prev_layer=e3, nr_filts=int(coarse_dim/2), kernel_size=ks, layer_name='E4')
+        e4 = MaxPool(pool_size=2, name='E4_P')(e4c)
+        e4 = Dropout(dropout, name='E4_D2')(e4)  
             
-            # U-Net Decoder - third level
-            d3 = Conv3DTranspose(filters=int(coarse_dim/4), kernel_size=(ks, ks, ks), 
-                            strides=(2, 2, 2), padding='same', name='D3_DC')(d4)
+        # U-Net Encoder - bottom level
+        b = Conv(prev_layer=e4, nr_filts=coarse_dim, kernel_size=ks, layer_name='B')
+
+        # U-Net Decoder - fourth level
+        d4 = ConvTranspose(filters=int(coarse_dim/2), kernel_size=ks, strides=2, padding='same', name='D4_DC')(b)
+        d4 = concatenate([d4, e4c], name='merge_layer_E4_A2')
+        d4 = Dropout(dropout, name='D4_D1')(d4)
+        d4 = Conv(prev_layer=d4, nr_filts=int(coarse_dim/2), kernel_size=ks, layer_name='D4')
+
+        # U-Net Decoder - third level
+        d3 = ConvTranspose(filters=int(coarse_dim/4), kernel_size=ks, strides=2, padding='same', name='D3_DC')(d4)
     else:
         print('ERROR: input data have wrong dimension')
 
     # U-Net Decoder - third level (continue)
-    if(np.size(img_shape) == 4):
-        # 2-D network
-        d3 = concatenate([d3, e3c], name='merge_layer_E3_A2')
-        d3 = Dropout(dropout, name='D3_D1')(d3)
-        d3 = Conv2D_Layers(prev_layer=d3, nr_filts=int(coarse_dim/2), 
-                           kernel_size=ks, layer_name='D3')
-    elif(np.size(img_shape) == 5):
-        # 3-D network
-        d3 = concatenate([d3, e3c], name='merge_layer_E3_A2')
-        d3 = Dropout(dropout, name='D3_D1')(d3)
-        d3 = Conv3D_Layers(prev_layer=d3, nr_filts=int(coarse_dim/2), 
-                           kernel_size=(ks, ks, ks), layer_name='D3')
+    d3 = concatenate([d3, e3c], name='merge_layer_E3_A2')
+    d3 = Dropout(dropout, name='D3_D1')(d3)
+    d3 = Conv(prev_layer=d3, nr_filts=int(coarse_dim/2), kernel_size=ks, layer_name='D3')
 
     # U-Net Decoder - second level
-    if(np.size(img_shape) == 4):
-        # 2-D network
-        d2 = Conv3DTranspose(filters=int(coarse_dim/8), kernel_size=ks, 
-                        strides=(1, 2, 2), padding='same', name='D2_DC')(d3)
-        d2 = concatenate([d2, e2c], name='merge_layer_E2_A2')
-        d2 = Dropout(dropout, name='D2_D1')(d2)
-        d2 = Conv2D_Layers(prev_layer=d2, nr_filts=int(coarse_dim/4),
-                    kernel_size=ks, layer_name='D2')
-    elif(np.size(img_shape) == 5):
-        # 3-D network
-        d2 = Conv3DTranspose(filters=int(coarse_dim/8), kernel_size=(ks, ks, ks), 
-                            strides=(2, 2, 2), padding='same', name='D2_DC')(d3)
-        d2 = concatenate([d2, e2c], name='merge_layer_E2_A2')
-        d2 = Dropout(dropout, name='D2_D1')(d2)
-        d2 = Conv3D_Layers(prev_layer=d2, nr_filts=int(coarse_dim/4),
-                           kernel_size=(ks, ks, ks), layer_name='D2')
+    d2 = ConvTranspose(filters=int(coarse_dim/8), kernel_size=ks, strides=2, padding='same', name='D2_DC')(d3)
+    d2 = concatenate([d2, e2c], name='merge_layer_E2_A2')
+    d2 = Dropout(dropout, name='D2_D1')(d2)
+    d2 = Conv(prev_layer=d2, nr_filts=int(coarse_dim/4), kernel_size=ks, layer_name='D2')
 
     # U-Net Decoder - upper level
-    if(np.size(img_shape) == 4):
-        d1 = Conv3DTranspose(filters=int(coarse_dim/16), kernel_size=ks, 
-                            strides=(1, 2, 2), padding='same', name='D1_DC')(d2)
-        d1 = concatenate([d1, e1c], name='merge_layer_E1_A2')
-        d1 = Dropout(dropout, name='D1_D1')(d1)
-        d1 = Conv2D_Layers(prev_layer=d1, nr_filts=int(coarse_dim/16),
-                        kernel_size=ks, layer_name='D1')
-    elif(np.size(img_shape) == 5):
-        d1 = Conv3DTranspose(filters=int(coarse_dim/16), kernel_size=(ks, ks, ks), 
-                            strides=(2, 2, 2), padding='same', name='D1_DC')(d2)
-        d1 = concatenate([d1, e1c], name='merge_layer_E1_A2')
-        d1 = Dropout(dropout, name='D1_D1')(d1)
-        d1 = Conv3D_Layers(prev_layer=d1, nr_filts=int(coarse_dim/16),
-                        kernel_size=(ks, ks, ks), layer_name='D1')
+    d1 = ConvTranspose(filters=int(coarse_dim/16), kernel_size=ks, strides=2, padding='same', name='D1_DC')(d2)
+    d1 = concatenate([d1, e1c], name='merge_layer_E1_A2')
+    d1 = Dropout(dropout, name='D1_D1')(d1)
+    d1 = Conv(prev_layer=d1, nr_filts=int(coarse_dim/16), kernel_size = ks, layer_name='D1')
 
     # Outro Layer
-    if(np.size(img_shape) == 4):
-        output_image = ConvLSTM2D(filters=int(img_shape[-1]), kernel_size=ks, 
-                                  data_format='channels_last', recurrent_activation='hard_sigmoid', return_sequences=True,
-                                  strides=(1, 1), padding='same', name='out_C')(d1)
-    elif(np.size(img_shape) == 5):
-        output_image = ConvLSTM3D(filters=int(img_shape[-1]), kernel_size=(ks, ks, ks), 
-                                  data_format='channels_last', recurrent_activation='hard_sigmoid', return_sequences=True,
-                                  strides=(1, 1, 1), padding='same', name='out_C')(d1)
+    output_image = ConvLSTM(
+        filters=int(img_shape[-1]),
+        kernel_size=ks,
+        data_format='channels_last', 
+        recurrent_activation='hard_sigmoid', 
+        return_sequences=True,
+        strides=1,
+        padding='same', 
+        name='out_C'
+    )(d1)
     
     output_image = Activation("sigmoid", name='sigmoid')(output_image)
     
