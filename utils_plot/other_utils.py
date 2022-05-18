@@ -1,6 +1,26 @@
-import numpy as np, os
+import numpy as np, os, matplotlib.pyplot as plt
 from glob import glob
 from PIL import Image
+
+from matplotlib import colors
+
+
+class MidpointNormalize(colors.Normalize):
+    """
+    Created by Joe Kington.
+    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
+    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
+    """
+    # set the colormap and centre the colorbar
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        colors.Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        # I'm ignoring masked values and all kinds of edge cases to make a simple example...
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
+
 
 def MergeImages(new_image_name, old_image_name, output_path='./', form='v', delete_old=False):
     """ Merge images togheter to create new image.
@@ -74,3 +94,27 @@ def MergeImages(new_image_name, old_image_name, output_path='./', form='v', dele
     else:
         # old images not deleted.
         pass
+
+
+class adjust_axis:
+    def __init__(self, axis, varr, xy, to_round=10, step=5, fmt=int):
+        self.axis = axis
+        self.varr = varr
+        self.to_round = to_round
+        self.step = step
+        self.fmt = fmt
+        
+        loc_f = self.get_axis_locs()
+        if(xy == 'x'):
+            plt.xticks(loc_f)
+            axis.set_xticklabels([int(round(varr[i_n])) for i_n in loc_f])
+        elif(xy == 'y'):
+            plt.yticks(loc_f)
+            axis.set_yticklabels([int(round(varr[i_n])) for i_n in loc_f])
+        
+    def get_axis_locs(self):    
+        v_max = int(round(self.varr.max()/self.to_round)*self.to_round) if int(round(self.varr.max()/self.to_round)*self.to_round) <= self.varr.max() else int(round(self.varr.max()/self.to_round)*self.to_round)-self.to_round
+        v_min = int(round(self.varr.min()/self.to_round)*self.to_round) if int(round(self.varr.min()/self.to_round)*self.to_round) >= self.varr.min() else int(round(self.varr.min()/self.to_round)*self.to_round)+self.to_round
+        v_plot = np.arange(v_min, v_max+self.step, self.step)
+        loc_v = np.array([np.argmin(abs(self.varr-v_plot[i])) for i in range(v_plot.size)]).astype(self.fmt)
+        return loc_v

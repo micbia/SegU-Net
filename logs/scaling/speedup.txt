@@ -1,5 +1,5 @@
-# GPUs, runtime (per epoch in sec)
+# GPUs	UNet	LSTM_UNet runtime (per epoch in sec)
 8	2367
 4	2635
 2	3072
-1	3374	
+1	3374	3860

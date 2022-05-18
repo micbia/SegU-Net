@@ -45,8 +45,11 @@ class LightConeGenerator(Sequence):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         
         X = np.zeros((np.append(self.batch_size, self.data_shape)))
+        #if(np.min(self.data_shape) == np.max(self.data_shape)):
+        #    y = np.zeros((np.append(self.batch_size, self.data_shape[1:])))
+        #else:
+        #    y = np.zeros((np.append(self.batch_size, self.data_shape)))
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
-
         for i, idx in enumerate(indexes):
             if(self.zipf):
                 i_tar = self.content[idx]
@@ -76,7 +79,8 @@ class LightConeGenerator(Sequence):
             else:
                 # read LC
                 dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
-                xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                #xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                xH = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
                 
                 # apply manipolation on the LC data
                 X[i], y[i] = self._lc_data(x=dT, y=xH)
@@ -84,7 +88,7 @@ class LightConeGenerator(Sequence):
         # add channel dimension
         X = X[..., np.newaxis]
         y = y[..., np.newaxis]
-        
+
         return X, y
 
     def on_epoch_end(self):
@@ -94,13 +98,21 @@ class LightConeGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
     def _lc_data(self, x, y):
-        #if(len(self.data_shape) == 3):
-        rseed2 = random.randint(0, x.shape[-1]-1)
-        dT_sampled = x[:,:,rseed2].astype(np.float32)
-        xH_sampled = y[:,:,rseed2].astype(np.float32)
-        #scaled_dT_sampled = self._RescaleData(arr=dT_sampled, a=1e-7, b=1.-1e-7)
-        #scaled_xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
-        #return scaled_dT_sampled, scaled_xH_sampled
+        if(np.min(self.data_shape) == np.max(self.data_shape)):
+            # for U-Net on slices
+            rseed2 = random.randint(0, x.shape[-1]-1)
+            dT_sampled = x[:, :, rseed2].astype(np.float32)
+            xH_sampled = y[:, :, rseed2].astype(np.float32)
+        else:
+            # for LSTM U-Net on frequency range
+            freq_size = np.min(self.data_shape)
+            rseed2 = random.randint(freq_size, x.shape[-1]-1-freq_size) 
+            dT_sampled = np.array([x[:, :, i].astype(np.float32) for i in range(rseed2-freq_size//2, rseed2+freq_size//2)])
+            #xH_sampled = y[:, :, rseed2+freq_size//2-1].astype(np.float32)      # get only last slice
+            xH_sampled = np.array([y[:, :, i].astype(np.float32) for i in range(rseed2-freq_size//2, rseed2+freq_size//2)])
+
+        #dT_sampled = self._RescaleData(arr=dT_sampled, a=1e-3, b=100.)
+        #xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
         return dT_sampled, xH_sampled
 
 

@@ -8,6 +8,52 @@ from tensorflow.python.framework import ops
 from tensorflow.python.ops import array_ops 
 from tensorflow.python.ops import math_ops 
 
+def get_avail_metris(mname):
+    if(mname == 'wasserstein_loss'):
+        metric = wasserstein_loss
+    elif(mname == 'matthews_coef'):
+        metric = matthews_coef
+    elif(mname == 'precision'):
+        metric = precision
+    elif(mname == 'recall'):
+        metric = recall
+    elif(mname == 'r2score'):
+        metric = r2score
+    elif(mname == 'r2score_loss'):
+        metric = r2score_loss
+    elif(mname == 'weighted_binary_crossentropy'):
+        metric = weighted_binary_crossentropy
+    elif(mname == 'balanced_cross_entropy'):
+        metric = balanced_cross_entropy
+    elif(mname == 'tversky_loss'):
+        metric = tversky_loss
+    elif(mname == 'iou'):
+        metric = iou
+    elif(mname == 'iou_loss'):
+        metric = iou_loss
+    elif(mname == 'dice_coef'):
+        metric = dice_coef
+    elif(mname == 'dice_coef_loss'):
+        metric = dice_coef_loss
+    elif(mname == 'phi_coef'):
+        metric = phi_coef
+    elif(mname == 'focal_loss'):
+        metric = focal_loss
+    elif(mname == 'mae'):
+        metric = mean_absolute_error
+    elif(mname == 'mse'):
+        metric = 'mse' #mean_squared_error
+    elif(mname == 'ssiml'):
+        metric = ssiml
+    elif(mname == 'maeacc'):
+        metric = mae_accuracy
+    elif(mname == 'local_loss'):
+        metric = local_loss
+    else:
+        ValueError(' No corresponding metric found!')
+
+    return metric
+
 def matthews_coef(y_true, y_pred):
     # thie module is to use on tensors (so for Tensorflow or Keras)
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
@@ -50,6 +96,9 @@ def r2score(y_true, y_pred):
     SS_res =  K.sum(K.square(y_true - y_pred)) 
     SS_tot = K.sum(K.square(y_true - K.mean(y_true))) 
     return 1 - SS_res/(SS_tot + K.epsilon())
+
+def r2score_loss(y_true, y_pred):
+    return 1 - r2score(y_true, y_pred)
 
 
 def weighted_binary_crossentropy(y_true, y_pred):
@@ -100,6 +149,10 @@ def tversky_loss(y_true, y_pred, beta=0.7):
 
     return loss
 
+def mae_accuracy(y_true, y_pred):
+    # tf.keras.metrics.mean_absolute_percentage_error
+    # loss = 100 * abs((y_true - y_pred) / y_true)
+    return 1 - K.mean(K.abs((K.flatten(y_true) - K.flatten(y_pred)) / (K.flatten(y_true) + K.epsilon())))
 
 
 def iou(y_true, y_pred):

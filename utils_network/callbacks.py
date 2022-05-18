@@ -4,7 +4,7 @@ from glob import glob
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import Callback
 
-class HistoryCheckpoint(callbacks.Callback):
+class HistoryCheckpoint(Callback):
     def __init__(self, filepath='./', verbose=0, save_freq=1, in_epoch=0):
         self.verbose = verbose
         self.filepath = filepath
