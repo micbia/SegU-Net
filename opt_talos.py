@@ -69,31 +69,18 @@ size_valid_dataset = X_valid.shape[0]
 print(size_train_dataset, size_valid_dataset)
 
 # Network Hyperparameters
-p = {#'coarse_dim': [128, 256, 512],
-     'coarse_dim': [256]
-     'dropout':[0.05, 0.1, 0.15],
-     'kernel_size':[3, 5],
-     'activation': [ReLU(), LeakyReLU()],
-     'final_activation': ['sigmoid'], 
-     'optimizer': [Adam], 
-     #'depth': [3, 4]
-     'depth':[4]
-    }
-
-"""
 p = {'coarse_dim': [128, 256, 512],
      'dropout':[0.05, 0.1, 0.15],
      'kernel_size':[3, 4, 6],
-     #'batch_size':[16*GPU, 32*GPU, 64*GPU],
+     'batch_size':[16*GPU, 32*GPU, 64*GPU],
      'activation': [ReLU(), LeakyReLU(), ELU()],
      'final_activation': ['sigmoid', 'softmax'],
-     #'lr':[10**(-i) for i in range(5,7)],
+     'lr':[10**(-i) for i in range(5,7)],
      'optimizer': [Adam, RMSprop, Nadam],
-     #'epochs':[100],
+     'epochs':[200],
      #'loss':[avail_metrics['balanced_cross_entropy'], avail_metrics['binary_crossentropy']],
      'depth': [3,4]
     }
-"""
 
 # save hyperparemeters sample
 with open(PATH_OUT+'hyperparameters_space.json', 'w') as file:

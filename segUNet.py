@@ -14,7 +14,7 @@ from config.net_config import NetworkConfig
 from utils_network.networks import Unet, LSTM_Unet, Unet_Reg
 from utils_network.metrics import get_avail_metris
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
-from utils_network.data_generator import LightConeGenerator
+from utils_network.data_generator import LightConeGenerator, LightConeGenerator_Reg
 from utils.other_utils import get_data, get_data_lc
 from utils_plot.plotting import plot_loss
 
@@ -35,7 +35,7 @@ KS = conf.kernel_size
 EPOCHS = conf.epochs
 LOSS = get_avail_metris(conf.loss)
 OPTIMIZER = Adam(lr=conf.learn_rate)
-ACTIVATION = 
+ACTIVATION = 'relu'
 METRICS = [get_avail_metris(m) for m in conf.metrics]
 RECOMPILE = conf.recomplile
 GPU = conf.gpus
@@ -107,7 +107,33 @@ else:
         size_train_dataset = train_idx.size
         valid_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
 
+"""
 # Create data generator from tensorflow.keras.utils.Sequence
+train_generator = LightConeGenerator_Reg(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+valid_generator = LightConeGenerator_Reg(path=PATH_VALID, data_temp=valid_idx, data_shape=IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+
+# Define generator functional
+def generator_train():
+    multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=True)
+    multi_enqueuer.start(workers=10, max_queue_size=10)
+    while True:
+        batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
+        #yield(batch_xs, {'output1': batch_ys1, 'output2': batch_ys2})
+        yield batch_xs, [batch_ys1, batch_ys2]
+        
+def generator_valid():
+    multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
+    multi_enqueuer.start(workers=10, max_queue_size=10)
+    while True:
+        batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
+        #yield(batch_xs, {'output1': batch_ys1, 'output2': batch_ys2})
+        yield batch_xs, [batch_ys1, batch_ys2]
+
+# Create dataset from data generator
+train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*2)))
+valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*2)))
+"""
+
 train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
@@ -120,7 +146,7 @@ def generator_train():
         yield batch_xs, batch_ys
 
 def generator_valid():
-    multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=True)
+    multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
     multi_enqueuer.start(workers=10, max_queue_size=10)
     while True:
         batch_xs, batch_ys = next(multi_enqueuer.get()) 
@@ -178,14 +204,17 @@ with strategy.scope():
         hyperpar = {'coarse_dim': COARSE_DIM,
                     'dropout': DROPOUT,
                     'kernel_size': KS,
-                    'activation': ReLU(),
-                    'final_activation': 'sigmoid',
+                    'activation': ACTIVATION,
+                    'final_activation': None,
                     'depth': 4}
 
+        #model = Unet_Reg(img_shape=np.append(IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
         model = Unet(img_shape=np.append(IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
         #model = LSTM_Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
         #model = Unet3D_time(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
+        
         model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+        #model.compile(optimizer=OPTIMIZER, loss=[LOSS, LOSS], loss_weights=[1., 1.], metrics=[METRICS, METRICS])
 
 # define callbacks
 callbacks = [EarlyStopping(patience=60, verbose=1),

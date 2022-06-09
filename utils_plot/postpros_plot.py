@@ -34,7 +34,8 @@ ax1.set_ylabel('Loss functions'), ax1.set_xlabel('Epoch')
 ax1.semilogy(val_loss, color='cornflowerblue', label='Validation Loss', ls='--')  
 ax1.semilogy(loss, color='navy', label='Training Loss') 
 ax1.scatter(idx_best_mode, val_loss[idx_best_mode], marker="x", color="r", label="Best Model: %.3e" %(np.min(val_loss)))
-ax1.set_xlim(-1, loss.size)#, ax1.set_ylim(loss.min()*0.9, 2.82e-1)
+plot_min, plot_max = np.min([loss.min(), val_loss.min()])*0.9, np.min([loss.max(), val_loss.max()])
+ax1.set_xlim(-1, loss.size)#, ax1.set_ylim(plot_min, plot_max)
 
 ax3 = ax1.twinx() 
 ax3.semilogy(lr, color='k', alpha=0.4, label='Learning Rate') 
@@ -57,9 +58,8 @@ for i_nm, (nm, vnm) in enumerate(zip(name_metric, name_val_metric)):
         ax2.scatter(idx_best_mode, val_metric[idx_best_mode], marker="x", color="r")
         i_cl += 1
 
-ax2.set_xlim(-1,loss.size) 
-ax2.set_ylim(0.6, 0.85)
-#ax2.set_ylim(0., 1.0)
+ax2.set_xlim(-1,loss.size)#, ax2.set_ylim(0.5, 0.85)
+ax2.set_ylim(0., 1.0)
 ax4 = ax2.twinx() 
 ax4.semilogy(lr, color='k', alpha=0.4, label='Learning Rate') 
 ax4.set_ylabel('Learning Rate') 
@@ -69,9 +69,9 @@ ax4.set_ylabel('Learning Rate')
 ax2.legend(loc='best')
 
 ax1.xaxis.set_minor_locator(ticker.MultipleLocator(1))
+ax1.xaxis.set_major_locator(ticker.MultipleLocator(20))
 ax2.xaxis.set_minor_locator(ticker.MultipleLocator(1))
-ax1.xaxis.set_major_locator(ticker.MultipleLocator(10))
-ax2.xaxis.set_major_locator(ticker.MultipleLocator(10))
+ax2.xaxis.set_major_locator(ticker.MultipleLocator(20))
 #ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
 #ax2.yaxis.set_minor_locator(ticker.MultipleLocator(0.01))
 

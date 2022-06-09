@@ -32,7 +32,10 @@ MAKE_PLOT = False
 tobs = 1000
 
 path_pred = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/inputs/prediction_set/'
-path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/17-05T09-23-54_128slice/'
+#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/17-05T09-23-54_128slice/'
+#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/19-05T09-46-01_128slice/'
+#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/19-05T17-07-12_128slice/'
+path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/19-05T17-45-15_128slice/'
 #path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/03-11T12-02-05_128slice/'
 config_file = path_in+'net_Unet_lc.ini'
 #path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/24-02T09-32-28_10cube/'

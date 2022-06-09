@@ -84,8 +84,8 @@ def Unet(img_shape, params, path='./'):
     output_image = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_C')(l)
     network_layers['out_C'] = output_image
 
-    output_image = Activation(params['final_activation'], name='final_activation')(output_image)
-    network_layers['out_img'] = output_image
+    #output_image = Activation(params['final_activation'], name='final_activation')(output_image)
+    #network_layers['out_img'] = output_image
 
     model = Model(inputs=[img_input], outputs=[output_image], name='Unet')
 
@@ -373,8 +373,9 @@ def Unet_Reg(img_shape, params, path='./'):
     output_image = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_C')(l)
     network_layers['out_C'] = output_image
 
-    output_image = Activation(params['final_activation'], name='final_activation')(output_image)
-    network_layers['out_img'] = output_image
+    if(params['final_activation'] != None):
+        output_image = Activation(params['final_activation'], name='final_activation')(output_image)
+        network_layers['out_img'] = output_image
 
     # Regression branch
     l = BatchNormalization(name='R_BN')(network_layers['E4_P'])
