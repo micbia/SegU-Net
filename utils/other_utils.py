@@ -294,3 +294,20 @@ def save_cbin(filename, data, bits=32, order='C'):
     f.close()
 
 
+def config_paths(conf):
+    if(conf.BEST_EPOCH != 0 and conf.RESUME_EPOCH !=0):
+        PATH_OUT = conf.RESUME_PATH
+        RESUME_MODEL = '%scheckpoints/model-sem21cm_ep%d.h5' %(conf.RESUME_PATH, conf.BEST_EPOCH)
+    else:
+        RESUME_MODEL = './foo'
+        if(len(conf.IM_SHAPE) == 3):
+            PATH_OUT = '%soutputs/%s_%dcube/' %(conf.IO_PATH, datetime.now().strftime('%d-%mT%H-%M-%S'), conf.IM_SHAPE[0])
+        elif(len(conf.IM_SHAPE) == 2):
+            PATH_OUT = '%soutputs/%s_%dslice/' %(conf.IO_PATH, datetime.now().strftime('%d-%mT%H-%M-%S'), conf.IM_SHAPE[0])
+        else:
+            print('!!! Wrong data dimension !!!')
+        os.makedirs(PATH_OUT)
+        os.makedirs(PATH_OUT+'/outputs')
+        os.makedirs(PATH_OUT+'/source')
+        os.makedirs(PATH_OUT+'/checkpoints')
+    return PATH_OUT, RESUME_MODEL

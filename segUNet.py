@@ -1,7 +1,6 @@
 import os, random, numpy as np, sys
 import tensorflow as tf
 
-from sklearn.model_selection import train_test_split
 from datetime import datetime
 from glob import glob
 
@@ -11,11 +10,11 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import ELU, LeakyReLU, PReLU, ReLU
 
 from config.net_config import NetworkConfig
-from utils_network.networks import Unet, LSTM_Unet, Unet_Reg
+from utils_network.networks import Unet, LSTM_Unet, Unet_Reg, ChonkyBoy, ChonkyBoy3
 from utils_network.metrics import get_avail_metris
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
-from utils_network.data_generator import LightConeGenerator, LightConeGenerator_Reg
-from utils.other_utils import get_data, get_data_lc
+from utils_network.data_generator import LightConeGenerator, LightConeGenerator_Reg, LightConeGenerator_SegRec3 , LightConeGenerator_SegRec
+from utils.other_utils import get_data, get_data_lc, config_paths
 from utils_plot.plotting import plot_loss
 
 # title
@@ -25,52 +24,29 @@ config_file = sys.argv[1]
 conf = NetworkConfig(config_file)
 
 # --------------------- NETWORK & RESUME OPTIONS ---------------------
+FREEZE = False
 RANDOM_SEED = 2021
-BATCH_SIZE = conf.batch_size
-DATA_AUGMENTATION = conf.augment
-IM_SHAPE = conf.img_shape
-COARSE_DIM = conf.chansize
-DROPOUT = conf.dropout
-KS = conf.kernel_size
-EPOCHS = conf.epochs
-LOSS = get_avail_metris(conf.loss)
-OPTIMIZER = Adam(lr=conf.learn_rate)
-ACTIVATION = 'relu'
-METRICS = [get_avail_metris(m) for m in conf.metrics]
-RECOMPILE = conf.recomplile
-GPU = conf.gpus
-IO_PATH = conf.io_path
-DATASET_PATH = conf.dataset_path
-if isinstance(DATASET_PATH, list):
-    PATH_TRAIN = IO_PATH+'inputs/'+DATASET_PATH[0]
-    PATH_VALID = IO_PATH+'inputs/'+DATASET_PATH[1]
+BATCH_SIZE = conf.BATCH_SIZE
+METRICS = [get_avail_metris(m) for m in conf.METRICS]
+if(isinstance(conf.LOSS, list)):
+    LOSS = [get_avail_metris(loss) for loss in conf.LOSS]
+    LOSS = {"out_imgSeg": LOSS[0], "out_imgRec": LOSS[1]}
+    LOSS_WEIGHTS = {"out_imgSeg": 0.5, "out_imgRec": 0.5}
 else:
-    PATH_TRAIN = IO_PATH+'inputs/'+conf.dataset_path
+    LOSS = get_avail_metris(conf.LOSS)
+OPTIMIZER = Adam(lr=conf.LR)
+ACTIVATION = 'relu'
+if isinstance(conf.DATASET_PATH, list):
+    PATH_TRAIN = conf.IO_PATH+'inputs/'+conf.DATASET_PATH[0]
+    PATH_VALID = conf.IO_PATH+'inputs/'+conf.DATASET_PATH[1]
+else:
+    PATH_TRAIN = conf.IO_PATH+'inputs/'+conf.dataset_path
     PATH_VALID = PATH_TRAIN
 ZIPFILE = (0 < len(glob(PATH_TRAIN+'data/*tar.gz')) and 0 < len(glob(PATH_VALID+'data/*tar.gz')))
-BEST_EPOCH = conf.best_epoch
-# if you want to restart from the previous best model set RESUME_EPOCH = BEST_EPOCH
-RESUME_EPOCH = conf.resume_epoch
-RESUME_PATH = conf.resume_path
+# TODO: if you want to restart from the previous best model set conf.RESUME_EPOCH = conf.BEST_EPOCH and loss need to be cut accordingly
 # -------------------------------------------------------------------
-
-if(BEST_EPOCH != 0 and RESUME_EPOCH !=0):
-    PATH_OUT = RESUME_PATH
-    RESUME_MODEL = '%scheckpoints/model-sem21cm_ep%d.h5' %(RESUME_PATH, BEST_EPOCH)
-else:
-    RESUME_MODEL = './foo'
-    if(len(IM_SHAPE) == 3):
-        PATH_OUT = '%soutputs/%s_%dcube/' %(IO_PATH, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
-    elif(len(IM_SHAPE) == 2):
-        PATH_OUT = '%soutputs/%s_%dslice/' %(IO_PATH, datetime.now().strftime('%d-%mT%H-%M-%S'), IM_SHAPE[0])
-    else:
-        print('!!! Wrong data dimension !!!')
-    os.makedirs(PATH_OUT)
-    os.makedirs(PATH_OUT+'/outputs')
-    os.makedirs(PATH_OUT+'/source')
-    os.makedirs(PATH_OUT+'/checkpoints')
-
 random.seed(RANDOM_SEED)
+PATH_OUT, RESUME_MODEL = config_paths(conf)
 
 # copy code to source directory
 os.system('cp *.py %s/source' %PATH_OUT)
@@ -80,37 +56,46 @@ os.system('cp -r utils_plot %s/source' %PATH_OUT)
 os.system('cp -r config %s/source' %PATH_OUT)
 os.system('cp %s %s' %(config_file, PATH_OUT))
 
-# Load data
-if not isinstance(DATA_AUGMENTATION, str):
-    if isinstance(DATASET_PATH, (list, np.ndarray)):
-        print('Load images ...') 
-        X_train, y_train = get_data(PATH_TRAIN+'data/', IM_SHAPE, shuffle=True)
-        size_train_dataset = X_train.shape[0]
-        print('Load masks ...') 
-        X_valid, y_valid = get_data(PATH_VALID+'data/', IM_SHAPE, shuffle=True)
-        size_valid_dataset = X_valid.shape[0]
-    else:
-        print('Load dataset ...') 
-        X, y = get_data_lc(path=PATH_TRAIN, fname='lc_256Mpc_train', shuffle=True)
-        X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.15, random_state=RANDOM_SEED)
-        size_train_dataset = X_train.shape[0]
-else:
-    if isinstance(DATASET_PATH, (list, np.ndarray)):
-        print('Data will ber extracted in batches...')
-        size_train_dataset, size_valid_dataset = 10000, 1500
-        train_idx = np.arange(0, size_train_dataset, dtype=int)
-        valid_idx = np.arange(0, size_valid_dataset, dtype=int)
-    else:
-        print('Data will ber extracted in batches...')
-        test_size, datasize = 0.15, 10000
-        train_idx = np.arange(0, datasize*(1-test_size), dtype=int)
-        size_train_dataset = train_idx.size
-        valid_idx = np.arange(datasize*(1-test_size), datasize, dtype=int)
+# Define GPU distribution strategy
+strategy = tf.distribute.MirroredStrategy()
+NR_GPUS = strategy.num_replicas_in_sync
+print ('Number of devices: %d' %NR_GPUS)
+BATCH_SIZE *= NR_GPUS
 
-"""
+# Load data
+size_train_dataset, size_valid_dataset = 10000, 1500
+train_idx = np.arange(0, size_train_dataset, dtype=int)
+valid_idx = np.arange(0, size_valid_dataset, dtype=int)
+
 # Create data generator from tensorflow.keras.utils.Sequence
-train_generator = LightConeGenerator_Reg(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
-valid_generator = LightConeGenerator_Reg(path=PATH_VALID, data_temp=valid_idx, data_shape=IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+"""
+# -------------------------- for ChonkyBoy --------------------------
+train_generator = LightConeGenerator_SegRec3(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+valid_generator = LightConeGenerator_SegRec3(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+
+# Define generator functional
+def generator_train():
+    multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=True)
+    multi_enqueuer.start(workers=10, max_queue_size=10)
+    while True:
+        batch_xs, batch_ys1, batch_ys2, batch_ys3 = next(multi_enqueuer.get()) 
+        yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_recAstro':batch_ys2, 'out_imgRec':batch_ys3})
+        
+def generator_valid():
+    multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
+    multi_enqueuer.start(workers=10, max_queue_size=10)
+    while True:
+        batch_xs, batch_ys1, batch_ys2, batch_ys3 = next(multi_enqueuer.get()) 
+        yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_recAstro':batch_ys2, 'out_imgRec':batch_ys3})
+
+# Create dataset from data generator
+train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, {'out_imgSeg': tf.float32, 'out_recAstro': tf.float32, 'out_imgRec': tf.float32}))
+valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, {'out_imgSeg': tf.float32, 'out_recAstro': tf.float32, 'out_imgRec': tf.float32}))
+# -------------------------- end ChonkyBoy --------------------------
+"""
+# -------------------------- for Unet_Reg --------------------------
+train_generator = LightConeGenerator_SegRec(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+valid_generator = LightConeGenerator_SegRec(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
 
 # Define generator functional
 def generator_train():
@@ -118,24 +103,23 @@ def generator_train():
     multi_enqueuer.start(workers=10, max_queue_size=10)
     while True:
         batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
-        #yield(batch_xs, {'output1': batch_ys1, 'output2': batch_ys2})
-        yield batch_xs, [batch_ys1, batch_ys2]
+        yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_imgRec':batch_ys2})
         
 def generator_valid():
     multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
     multi_enqueuer.start(workers=10, max_queue_size=10)
     while True:
         batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
-        #yield(batch_xs, {'output1': batch_ys1, 'output2': batch_ys2})
-        yield batch_xs, [batch_ys1, batch_ys2]
+        yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_imgRec':batch_ys2})
 
 # Create dataset from data generator
-train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*2)))
-valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*2)))
+train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, {'out_imgRec': tf.float32, 'out_imgSeg': tf.float32}))
+valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, {'out_imgRec': tf.float32, 'out_imgSeg': tf.float32}))
+# -------------------------- end Unet_Reg --------------------------
 """
-
-train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+# -------------------------- for Unet --------------------------
+train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
 
 # Define generator functional
 def generator_train():
@@ -153,14 +137,12 @@ def generator_valid():
         yield batch_xs, batch_ys
 
 # Create dataset from data generator
-train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*(len(IM_SHAPE)+2))))
-valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(IM_SHAPE)+2)), tf.TensorShape([None]*(len(IM_SHAPE)+2))))
-
-# Define GPU distribution strategy
-strategy = tf.distribute.MirroredStrategy()
-NR_GPUS = strategy.num_replicas_in_sync
-print ('Number of devices: %d' %NR_GPUS)
-BATCH_SIZE *= NR_GPUS
+train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(conf.IM_SHAPE)+2)), tf.TensorShape([None]*(len(conf.IM_SHAPE)+2))))
+valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, tf.float32), output_shapes=(tf.TensorShape([None]*(len(conf.IM_SHAPE)+2)), tf.TensorShape([None]*(len(conf.IM_SHAPE)+2))))
+# -------------------------- end U-Net --------------------------
+"""
+# TODO: create dataset that get the corresponding set of data ('dT3', 'xH', 'dT3wdg', etc) based on the conf.AUGMENT parameter ('seg', 'rec', 'seg+rec')
+#train_dataset, valid_dataset = GetDataset(conf=conf path=PATH_TRAIN, data_temp=train_idx, batch_size=BATCH_SIZE, shuffle=True).datasets
 
 # Distribute the dataset to the devices
 train_dist_dataset = strategy.experimental_distribute_dataset(train_dataset)
@@ -170,6 +152,7 @@ valid_dist_dataset = strategy.experimental_distribute_dataset(valid_dataset)
 options = tf.data.Options()
 options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
 train_dataset.with_options(options)
+valid_dataset.with_options(options)
 
 # Define model or load model
 with strategy.scope():
@@ -181,13 +164,19 @@ with strategy.scope():
         try:
             model = load_model(RESUME_MODEL)
         except:
-            custom_metrics = {m:get_avail_metris(m) for m in np.append(conf.loss, conf.metrics)}
-            model = load_model(RESUME_MODEL, custom_objects=cb)
+            custom_metrics = {m:get_avail_metris(m) for m in np.append(conf.LOSS, conf.METRICS)}
+            model = load_model(RESUME_MODEL, custom_objects=custom_metrics)
 
-        if(RECOMPILE):
-            RESUME_LR = np.loadtxt('%soutputs/lr_ep-%d.txt' %(RESUME_PATH, RESUME_EPOCH))[RESUME_EPOCH-1]
-            model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, metrics=METRICS)
-            resume_metrics = model.evaluate(X_valid, y_valid, verbose=1)
+        if(FREEZE):
+            for l in model.layers:
+                l.trainable = False
+
+        RESUME_LR = np.loadtxt('%soutputs/lr_ep-%d.txt' %(conf.RESUME_PATH, conf.RESUME_EPOCH))[conf.RESUME_EPOCH-1]
+        
+        if(conf.RECOMPILE):
+            #model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, metrics=METRICS)
+            model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, loss_weights=[1., 0.], metrics=[METRICS, METRICS])
+            resume_metrics = model.evaluate(valid_dataset, steps=size_valid_dataset//BATCH_SIZE, verbose=1)
             RESUME_LOSS = resume_metrics[0]
             msg = '\nScore resumed model:\n'
             for i, res_val in enumerate(resume_metrics):
@@ -196,60 +185,70 @@ with strategy.scope():
             print("Resume Learning rate: %.3e\n" %(tf.keras.backend.get_value(model.optimizer.lr)))
         else:
             tf.keras.backend.set_value(model.optimizer.lr, RESUME_LR)       # resume learning rate
-            RESUME_LOSS = np.loadtxt('%soutputs/val_loss_ep-%d.txt' %(RESUME_PATH, RESUME_EPOCH))[BEST_EPOCH-1]
+            RESUME_LOSS = np.loadtxt('%soutputs/val_loss_ep-%d.txt' %(conf.RESUME_PATH, conf.RESUME_EPOCH))[conf.BEST_EPOCH-1]
             print('\nScore resumed model:\n loss: %.3f' %RESUME_LOSS)
     else: 
         print('\nModel on %d GPU\n' %NR_GPUS)
         RESUME_LOSS = None
-        hyperpar = {'coarse_dim': COARSE_DIM,
-                    'dropout': DROPOUT,
-                    'kernel_size': KS,
+        hyperpar = {'coarse_dim': conf.COARSE_DIM,
+                    'dropout': conf.DROPOUT,
+                    'kernel_size': conf.KERNEL_SIZE,
                     'activation': ACTIVATION,
                     'final_activation': None,
                     'depth': 4}
 
-        #model = Unet_Reg(img_shape=np.append(IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
-        model = Unet(img_shape=np.append(IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
-        #model = LSTM_Unet(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
-        #model = Unet3D_time(img_shape=np.append(IM_SHAPE, 1), coarse_dim=COARSE_DIM, ks=KS, dropout=DROPOUT, path=PATH_OUT)
-        
-        model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
-        #model.compile(optimizer=OPTIMIZER, loss=[LOSS, LOSS], loss_weights=[1., 1.], metrics=[METRICS, METRICS])
+        # for Regression image + astropars
+        #model = Unet(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
+        #model = Unet_Reg(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
+        model = ChonkyBoy(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
+
+        model.compile(optimizer=OPTIMIZER, loss=LOSS, loss_weights=LOSS_WEIGHTS, metrics=[METRICS, METRICS])
+        #model.compile(optimizer=OPTIMIZER, loss=[LOSS, LOSS, LOSS], loss_weights=[0.4, 0.2, 0.4], metrics=[METRICS, METRICS, METRICS])
+
+        #model = Unet(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
+        #model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
 # define callbacks
 callbacks = [EarlyStopping(patience=60, verbose=1),
-             ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(RESUME_EPOCH-BEST_EPOCH), best=RESUME_LOSS),
+             ReduceLR(monitor='val_loss', factor=0.1, patience=5, min_lr=1e-7, verbose=1, wait=int(conf.RESUME_EPOCH-conf.BEST_EPOCH), best=RESUME_LOSS),
              SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.h5', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=RESUME_LOSS),
-             HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=RESUME_EPOCH)]
+             HistoryCheckpoint(filepath=PATH_OUT+'/outputs/', verbose=0, save_freq=1, in_epoch=conf.RESUME_EPOCH)]
 
 
 # model fit
 results = model.fit(x=train_dist_dataset,
                     batch_size=BATCH_SIZE, 
-                    epochs=EPOCHS,
+                    epochs=conf.EPOCHS,
                     steps_per_epoch=size_train_dataset//BATCH_SIZE,
-                    initial_epoch=RESUME_EPOCH,
+                    initial_epoch=conf.RESUME_EPOCH,
                     callbacks=callbacks, 
                     validation_data=valid_dist_dataset,
                     validation_steps=size_valid_dataset//BATCH_SIZE,
                     shuffle=True)
 
 
-# write info for prediction on config_file
-best_model_epoch = max([int(sf[sf.rfind('p')+1:sf.rfind('.')]) for sf in glob(PATH_OUT+'checkpoints/model-sem21cm_ep*.h5')]) 
-f = open(glob('%s*.ini' %PATH_OUT)[0], 'a')
-f.write('\n\n[PREDICTION]')
-f.write('\nMODEL_EPOCH = %d' %best_model_epoch)
-f.write('\nMODEL_PATH = %s' %(PATH_OUT))
-f.write('\nTTA_WRAP = False')
-f.write('\nAUGMENT = False')
-f.write('\nEVAL = True')
-f.write('\nINDEXES = 0') 
-f.close()
+# write info for prediction in the config_file
+best_model_epoch = max([int(sf[sf.rfind('p')+1:sf.rfind('.')]) for sf in glob(PATH_OUT+'checkpoints/model-sem21cm_ep*.h5')])
+resume_epoch = [int(sf[sf.rfind('ep-')+3:sf.rfind('.')]) for sf in glob(PATH_OUT+'outputs/loss_ep-*.txt')][0]
+
+fname = glob('%s*.ini' %PATH_OUT)[0]
+with open(fname) as f:
+    lines = f.readlines()
+
+for i, line in enumerate(lines):
+    if('RESUME_PATH' in line):
+        lines[i] = line.replace('None', PATH_OUT)
+    elif('BEST_EPOCH' in line):
+        lines[i] = line.replace('0', str(best_model_epoch))
+    elif('RESUME_EPOCH' in line):
+        lines[i] = line.replace('0', str(resume_epoch))
+
+#opening the file in write mode
+fout = open(fname, "w")
+fout.write(''.join(lines))
+fout.close()
+
 
 # Plot Loss
 #plot_loss(output=results, path=PATH_OUT+'outputs/')
 os.system('python utils_plot/postpros_plot.py %s/outputs/' %PATH_OUT)
-
-# Write accuracy in the output directory name
-#os.system('mv %s %s_acc%d' %(PATH_OUT[:-1], PATH_OUT[:-1], 100*np.max(results.history["val_binary_accuracy"])))

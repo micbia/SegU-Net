@@ -40,9 +40,9 @@ def get_avail_metris(mname):
     elif(mname == 'focal_loss'):
         metric = focal_loss
     elif(mname == 'mae'):
-        metric = mean_absolute_error
+        metric = tf.keras.metrics.mean_absolute_error
     elif(mname == 'mse'):
-        metric = 'mse' #mean_squared_error
+        metric = tf.keras.metrics.mean_squared_error
     elif(mname == 'ssiml'):
         metric = ssiml
     elif(mname == 'maeacc'):
@@ -98,6 +98,7 @@ def r2score(y_true, y_pred):
     return 1 - SS_res/(SS_tot + K.epsilon())
 
 def r2score_loss(y_true, y_pred):
+    # a.k.a: fraction of variance unexplained 
     return 1 - r2score(y_true, y_pred)
 
 
@@ -135,7 +136,7 @@ def balanced_cross_entropy(y_true, y_pred):
     """
     To decrease the number of false negatives, set beta>1. To decrease the number of false positives, set beta<1.
     """
-    beta = tf.maximum(tf.reduce_mean(1 - y_true), tf.keras.backend.epsilon())
+    beta = 1 - tf.maximum(tf.reduce_mean( y_true) / tf.reduce_sum(y_true), tf.keras.backend.epsilon())
     y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
     y_pred = K.log(y_pred / (1 - y_pred))
     return sigmoid_balanced_cross_entropy_with_logits(logits=y_pred, labels=y_true, beta=beta)

@@ -15,32 +15,35 @@ class NetworkConfig:
         config.read(self.config_file)
         
         trainconfig = config['TRAINING']
-        self.batch_size     = eval(trainconfig['BATCH_SIZE'])
-        self.augment        = StringOrNone(trainconfig['AUGMENT'])
-        self.img_shape      = tuple(np.array(eval(trainconfig['IMG_SHAPE']), dtype=int))
-        self.chansize       = eval(trainconfig['CHAN_SIZE'])
-        self.dropout        = eval(trainconfig['DROPOUT'])
-        self.kernel_size    = eval(trainconfig['KERNEL_SIZE'])
-        self.epochs         = eval(trainconfig['EPOCHS'])
-        self.loss           = trainconfig['LOSS']
+        self.BATCH_SIZE     = eval(trainconfig['BATCH_SIZE'])
+        self.AUGMENT        = StringOrNone(trainconfig['AUGMENT'])
+        self.IM_SHAPE      = tuple(np.array(eval(trainconfig['IMG_SHAPE']), dtype=int))
+        self.COARSE_DIM       = eval(trainconfig['CHAN_SIZE'])
+        self.DROPOUT        = eval(trainconfig['DROPOUT'])
+        self.KERNEL_SIZE    = eval(trainconfig['KERNEL_SIZE'])
+        self.EPOCHS         = eval(trainconfig['EPOCHS'])
+        if(', ' in trainconfig['LOSS']):
+            self.LOSS    = trainconfig['LOSS'].split(', ')
+        else:
+            self.LOSS    = trainconfig['LOSS']
         if(', ' in trainconfig['METRICS']):
-            self.metrics    = trainconfig['METRICS'].split(', ')
+            self.METRICS    = trainconfig['METRICS'].split(', ')
         else:
-            self.metrics    = trainconfig['METRICS']
-        self.learn_rate     = eval(trainconfig['LR'])
-        self.recomplile     = eval(trainconfig['RECOMP'])
-        self.gpus           = eval(trainconfig['GPUS'])
+            self.METRICS    = trainconfig['METRICS']
+        self.LR     = eval(trainconfig['LR'])
+        self.RECOMPILE     = eval(trainconfig['RECOMP'])
+        self.GPU           = eval(trainconfig['GPUS'])
         if(', ' in trainconfig['DATASET_PATH']):
-            self.dataset_path       = trainconfig['DATASET_PATH'].split(', ')
+            self.DATASET_PATH       = trainconfig['DATASET_PATH'].split(', ')
         else:
-            self.dataset_path       = trainconfig['DATASET_PATH']
-        self.io_path        = trainconfig['IO_PATH']
+            self.DATASET_PATH       = trainconfig['DATASET_PATH']
+        self.IO_PATH        = trainconfig['IO_PATH']
         
         try:
             resumeconfig = config['RESUME']
-            self.resume_path    = StringOrNone(resumeconfig['RESUME_PATH'])
-            self.best_epoch     = eval(resumeconfig['BEST_EPOCH'])
-            self.resume_epoch   = eval(resumeconfig['RESUME_EPOCH'])
+            self.RESUME_PATH    = StringOrNone(resumeconfig['RESUME_PATH'])
+            self.BEST_EPOCH     = eval(resumeconfig['BEST_EPOCH'])
+            self.RESUME_EPOCH   = eval(resumeconfig['RESUME_EPOCH'])
         except:
             f = open(CONFIG_FILE, 'a')
             f.write('\n\n[RESUME]')
@@ -50,7 +53,7 @@ class NetworkConfig:
             f.close()
 
             self.resume_path    = None
-            self.best_epoch     = 0
+            self.BEST_EPOCH     = 0
             self.resume_epoch   = 0
 
 class PredictionConfig:

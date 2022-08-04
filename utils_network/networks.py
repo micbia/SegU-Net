@@ -1,11 +1,295 @@
 import numpy as np
 
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Flatten, BatchNormalization, Activation, Dropout, concatenate
+from tensorflow.keras.layers import Input, Flatten, BatchNormalization, Activation, Dropout, concatenate, Multiply
 from tensorflow.keras.layers import Dense, Conv2D, Conv2DTranspose, Conv3D, Conv3DTranspose, TimeDistributed
 from tensorflow.keras.layers import ConvLSTM2D #, ConvLSTM3D only from tf v2.6.0
 from tensorflow.keras.layers import MaxPooling2D, MaxPooling3D
 from tensorflow.keras.utils import plot_model
+
+
+def ChonkyBoy(img_shape, params, path='./'):
+    print('Combine SegU-Net and RecU-Net (%dD U-Net network with %d levels).\n' %(np.size(img_shape)-1, params['depth']))
+    
+    if(np.size(img_shape)-1 == 2):
+        Conv = Conv2D
+        ConvTranspose = Conv2DTranspose
+        Pooling = MaxPooling2D
+        ps = (2, 2)
+    elif(np.size(img_shape)-1 == 3):
+        Conv = Conv3D
+        Pooling = MaxPooling3D
+        ConvTranspose = Conv3DTranspose
+        ps = (2, 2, 2)
+    else:
+        print('???')
+
+    def Conv_Layers(prev_layer, kernel_size, nr_filts, layer_name):
+        # first block
+        a = Conv(filters=nr_filts, kernel_size=kernel_size, padding='same',
+                   kernel_initializer="he_normal", name='%s_C1' %layer_name)(prev_layer)
+        a = BatchNormalization(name='%s_BN1' %layer_name)(a)
+        a = Activation(params['activation'], name='%s_A1' %layer_name)(a)
+        # second block
+        a = Conv2D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+                   kernel_initializer="he_normal", name='%s_C2' %layer_name)(a)
+        a = BatchNormalization(name='%s_BN2' %layer_name)(a)
+        a = Activation(params['activation'], name='%s_A2' %layer_name)(a)
+        return a
+    
+    # network input layer
+    img_input = Input(shape=img_shape, name='Image')
+    network_layers = {'Image':img_input}
+    l = img_input
+
+    # U-Net Encoder layers
+    for i_l in range(params['depth']):
+        # convolution
+        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='E%d' %(i_l+1))
+        network_layers['E%d_A2' %(i_l+1)] = lc
+
+        # pooling
+        l = Pooling(pool_size=ps, name='E%d_P' %(i_l+1))(lc)
+        network_layers['E%d_P' %(i_l+1)] = l
+
+        # dropout
+        do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
+        l = Dropout(do, name='E%d_D' %(i_l+1))(l)
+        network_layers['E%d_D' %(i_l+1)] = l
+
+    # bottom layer
+    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='B')
+    network_layers['B'] = l
+    
+    # U-Net Decoder layers
+    for i_l in range(params['depth'])[::-1]:
+        # transposed convolution
+        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='E%d_DC' %(i_l+1))(l)
+        network_layers['E%d_DC' %(i_l+1)] = lc
+
+        # concatenate
+        l = concatenate([lc, network_layers['E%d_A2' %(i_l+1)]], name='concatenate1_E%d_A2' %(i_l+1))
+        network_layers['concatenate1_E%d_A2' %(i_l+1)] = l
+
+        # dropout
+        l = Dropout(params['dropout'], name='D%d_D' %(i_l+1))(l)
+        network_layers['D%d_D' %(i_l+1)] = l
+
+        # convolution
+        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='D%d_C' %(i_l+1))
+        network_layers['D%d_C' %(i_l+1)] = l
+
+    # Outro Layer
+    out_C = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_C')(l)
+    network_layers['out_C'] = out_C
+
+    output_image_seg = Activation('sigmoid', name='out_imgSeg')(out_C)
+    network_layers['out_imgSeg'] = output_image_seg
+    # -----------------------------------------------------------------------------------------------------------------------------
+    # network input layer
+    img_input2 = Multiply(name='Image2')([output_image_seg, img_input])
+    network_layers['Image2'] = img_input2
+    l = img_input2
+
+    # U-Net Encoder layers
+    for i_l in range(params['depth']):
+        # convolution
+        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='encoder%d' %(i_l+1))
+        network_layers['encoder%d_A2' %(i_l+1)] = lc
+
+        # pooling
+        l = Pooling(pool_size=ps, name='encoder%d_P' %(i_l+1))(lc)
+        network_layers['encoder%d_P' %(i_l+1)] = l
+
+        # dropout
+        do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
+        l = Dropout(do, name='encoder%d_D' %(i_l+1))(l)
+        network_layers['encoder%d_D' %(i_l+1)] = l
+
+    # bottom layer
+    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='bottom_layer')
+    network_layers['bottom_layer'] = l
+    
+    # U-Net Decoder layers
+    for i_l in range(params['depth'])[::-1]:
+        # transposed convolution
+        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='decoder%d_DC' %(i_l+1))(l)
+        network_layers['decoder%d_DC' %(i_l+1)] = lc
+
+        # concatenate
+        l = concatenate([lc, network_layers['encoder%d_A2' %(i_l+1)]], name='concatenate2_E%d_A2' %(i_l+1))
+        network_layers['concatenate2_E%d_A2' %(i_l+1)] = l
+
+        # dropout
+        l = Dropout(params['dropout'], name='decoder%d_D' %(i_l+1))(l)
+        network_layers['decoder%d_D' %(i_l+1)] = l
+
+        # convolution
+        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='decoder%d_C' %(i_l+1))
+        network_layers['decoder%d_C' %(i_l+1)] = l
+
+    # Outro Layer
+    output_image_rec = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_imgRec')(l)
+    network_layers['out_imgRec'] = output_image_rec
+
+    if(params['final_activation'] != None):
+        output_image_rec = Activation(params['final_activation'], name='output_imgRec')(output_image_rec)
+        network_layers['out_imgRec'] = output_image_rec
+
+    model = Model(inputs=[img_input], outputs=[output_image_rec, output_image_seg], name='ChonkyBoy')
+
+    plot_model(model, to_file=path+'ChonkyBoy_visualisation.png', show_shapes=True, show_layer_names=True)
+    return model
+
+
+def ChonkyBoy3(img_shape, params, path='./'):
+    print('Combine SegU-Net and RecU-Net (%dD U-Net network with %d levels).\n' %(np.size(img_shape)-1, params['depth']))
+    
+    if(np.size(img_shape)-1 == 2):
+        Conv = Conv2D
+        ConvTranspose = Conv2DTranspose
+        Pooling = MaxPooling2D
+        ps = (2, 2)
+    elif(np.size(img_shape)-1 == 3):
+        Conv = Conv3D
+        Pooling = MaxPooling3D
+        ConvTranspose = Conv3DTranspose
+        ps = (2, 2, 2)
+    else:
+        print('???')
+
+    def Conv_Layers(prev_layer, kernel_size, nr_filts, layer_name):
+        # first block
+        a = Conv(filters=nr_filts, kernel_size=kernel_size, padding='same',
+                   kernel_initializer="he_normal", name='%s_C1' %layer_name)(prev_layer)
+        a = BatchNormalization(name='%s_BN1' %layer_name)(a)
+        a = Activation(params['activation'], name='%s_A1' %layer_name)(a)
+        # second block
+        a = Conv2D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+                   kernel_initializer="he_normal", name='%s_C2' %layer_name)(a)
+        a = BatchNormalization(name='%s_BN2' %layer_name)(a)
+        a = Activation(params['activation'], name='%s_A2' %layer_name)(a)
+        return a
+    
+    # network input layer
+    img_input = Input(shape=img_shape, name='Image')
+    network_layers = {'Image':img_input}
+    l = img_input
+
+    # U-Net Encoder layers
+    for i_l in range(params['depth']):
+        # convolution
+        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='E%d' %(i_l+1))
+        network_layers['E%d_A2' %(i_l+1)] = lc
+
+        # pooling
+        l = Pooling(pool_size=ps, name='E%d_P' %(i_l+1))(lc)
+        network_layers['E%d_P' %(i_l+1)] = l
+
+        # dropout
+        do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
+        l = Dropout(do, name='E%d_D' %(i_l+1))(l)
+        network_layers['E%d_D' %(i_l+1)] = l
+
+    # bottom layer
+    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='B')
+    network_layers['B'] = l
+    
+    # U-Net Decoder layers
+    for i_l in range(params['depth'])[::-1]:
+        # transposed convolution
+        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='E%d_DC' %(i_l+1))(l)
+        network_layers['E%d_DC' %(i_l+1)] = lc
+
+        # concatenate
+        l = concatenate([lc, network_layers['E%d_A2' %(i_l+1)]], name='concatenate1_E%d_A2' %(i_l+1))
+        network_layers['concatenate1_E%d_A2' %(i_l+1)] = l
+
+        # dropout
+        l = Dropout(params['dropout'], name='D%d_D' %(i_l+1))(l)
+        network_layers['D%d_D' %(i_l+1)] = l
+
+        # convolution
+        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='D%d_C' %(i_l+1))
+        network_layers['D%d_C' %(i_l+1)] = l
+
+    # Outro Layer
+    output_image_seg = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_imgSeg')(l)
+    network_layers['out_imgSeg'] = output_image_seg
+    # -----------------------------------------------------------------------------------------------------------------------------
+    # network input layer
+    img_input2 = Multiply(name='Image2')([output_image_seg, img_input])
+    network_layers['Image2'] = img_input2
+    l = img_input2
+
+    # U-Net Encoder layers
+    for i_l in range(params['depth']):
+        # convolution
+        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='encoder%d' %(i_l+1))
+        network_layers['encoder%d_A2' %(i_l+1)] = lc
+
+        # pooling
+        l = Pooling(pool_size=ps, name='encoder%d_P' %(i_l+1))(lc)
+        network_layers['encoder%d_P' %(i_l+1)] = l
+
+        # dropout
+        do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
+        l = Dropout(do, name='encoder%d_D' %(i_l+1))(l)
+        network_layers['encoder%d_D' %(i_l+1)] = l
+
+    # bottom layer
+    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='bottom_layer')
+    network_layers['bottom_layer'] = l
+    
+    # U-Net Decoder layers
+    for i_l in range(params['depth'])[::-1]:
+        # transposed convolution
+        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='decoder%d_DC' %(i_l+1))(l)
+        network_layers['decoder%d_DC' %(i_l+1)] = lc
+
+        # concatenate
+        l = concatenate([lc, network_layers['encoder%d_A2' %(i_l+1)]], name='concatenate2_E%d_A2' %(i_l+1))
+        network_layers['concatenate2_E%d_A2' %(i_l+1)] = l
+
+        # dropout
+        l = Dropout(params['dropout'], name='decoder%d_D' %(i_l+1))(l)
+        network_layers['decoder%d_D' %(i_l+1)] = l
+
+        # convolution
+        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='decoder%d_C' %(i_l+1))
+        network_layers['decoder%d_C' %(i_l+1)] = l
+
+    # Outro Layer
+    output_image_rec = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_imgRec')(l)
+    network_layers['out_imgRec'] = output_image_rec
+
+    if(params['final_activation'] != None):
+        output_image_rec = Activation(params['final_activation'], name='output_imgRec')(output_image_rec)
+        network_layers['out_imgRec'] = output_image_rec
+
+    # Regression branch
+    l = BatchNormalization(name='regression_BN')(network_layers['encoder4_P'])
+    l = Flatten(name='regression_F')(l)
+    l = Dropout(params['dropout'], name='regression_D')(l)
+    
+    l = Dense(640, activation='relu', name='regression_FC1')(l)
+    l = BatchNormalization(name='regression_BN1')(l)
+
+    l = Dense(512, activation='relu', name='regression_FC2')(l)
+    l = BatchNormalization(name='regression_BN2')(l)
+
+    nr_reclayer = 7
+    for i_l in range(nr_reclayer):
+        lname = 'out_recAstro' if(i_l==6) else 'regression_FC%d' %(i_l+3)
+        l = Dense(256//2**(i_l), activation='relu', name=lname)(l)
+    
+    out_params = l
+
+    model = Model(inputs=[img_input], outputs=[output_image_rec, out_params, output_image_seg], name='ChonkyBoy')
+
+    plot_model(model, to_file=path+'ChonkyBoy_visualisation.png', show_shapes=True, show_layer_names=True)
+    return model
+
 
 def Unet(img_shape, params, path='./'):
     # print message at runtime
@@ -328,68 +612,69 @@ def Unet_Reg(img_shape, params, path='./'):
     
     # network input layer
     img_input = Input(shape=img_shape, name='Image')
-    network_layers = {'Image':img_input}
+    network_layers = {'Image': img_input}
     l = img_input
 
     # U-Net Encoder layers
     for i_l in range(params['depth']):
         # convolution
-        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='E%d' %(i_l+1))
-        network_layers['E%d_A2' %(i_l+1)] = lc
+        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='encoder%d' %(i_l+1))
+        network_layers['encoder%d_A2' %(i_l+1)] = lc
 
         # pooling
-        l = Pooling(pool_size=ps, name='E%d_P' %(i_l+1))(lc)
-        network_layers['E%d_P' %(i_l+1)] = l
+        l = Pooling(pool_size=ps, name='encoder%d_P' %(i_l+1))(lc)
+        network_layers['encoder%d_P' %(i_l+1)] = l
 
         # dropout
         do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
-        l = Dropout(do, name='E%d_D' %(i_l+1))(l)
-        network_layers['E%d_D' %(i_l+1)] = l
-
+        l = Dropout(do, name='encoder%d_D' %(i_l+1))(l)
+        network_layers['encoder%d_D' %(i_l+1)] = l
 
     # bottom layer
-    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='B')
-    network_layers['B'] = l
+    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='bottom_layer')
+    network_layers['bottom_layer'] = l
     
     # U-Net Decoder layers
     for i_l in range(params['depth'])[::-1]:
         # transposed convolution
-        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='E%d_DC' %(i_l+1))(l)
-        network_layers['E%d_DC' %(i_l+1)] = lc
+        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='decoder%d_DC' %(i_l+1))(l)
+        network_layers['decoder%d_DC' %(i_l+1)] = lc
 
         # concatenate
-        l = concatenate([lc, network_layers['E%d_A2' %(i_l+1)]], name='concatenate_E%d_A2' %(i_l+1))
+        l = concatenate([lc, network_layers['encoder%d_A2' %(i_l+1)]], name='concatenate_E%d_A2' %(i_l+1))
         network_layers['concatenate_E%d_A2' %(i_l+1)] = l
 
         # dropout
-        l = Dropout(params['dropout'], name='D%d_D' %(i_l+1))(l)
-        network_layers['D%d_D' %(i_l+1)] = l
+        l = Dropout(params['dropout'], name='decoder%d_D' %(i_l+1))(l)
+        network_layers['decoder%d_D' %(i_l+1)] = l
 
         # convolution
-        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='D%d_C' %(i_l+1))
-        network_layers['D%d_C' %(i_l+1)] = l
+        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='decoder%d_C' %(i_l+1))
+        network_layers['decoder%d_C' %(i_l+1)] = l
 
     # Outro Layer
-    output_image = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_C')(l)
-    network_layers['out_C'] = output_image
+    output_image = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='output_img')(l)
+    network_layers['output_img'] = output_image
 
     if(params['final_activation'] != None):
-        output_image = Activation(params['final_activation'], name='final_activation')(output_image)
+        output_image = Activation(params['final_activation'], name='output_img')(output_image)
         network_layers['out_img'] = output_image
 
     # Regression branch
-    l = BatchNormalization(name='R_BN')(network_layers['E4_P'])
-    l = Flatten(name='R_F')(l)
-    l = Dropout(params['dropout'], name='R_D')(l)
+    l = BatchNormalization(name='regression_BN')(network_layers['encoder4_P'])
+    l = Flatten(name='regression_F')(l)
+    l = Dropout(params['dropout'], name='regression_D')(l)
     
-    l = Dense(640, activation='relu', name='R_FC1')(l)
-    l = BatchNormalization(name='R_BN1')(l)
+    l = Dense(640, activation='relu', name='regression_FC1')(l)
+    l = BatchNormalization(name='regression_BN1')(l)
 
-    l = Dense(512, activation='relu', name='R_FC2')(l)
-    l = BatchNormalization(name='R_BN2')(l)
+    l = Dense(512, activation='relu', name='regression_FC2')(l)
+    l = BatchNormalization(name='regression_BN2')(l)
 
-    for i_l in range(7):
-        l = Dense(256//2**(i_l), activation='relu', name='R_FC%d' %(i_l+3))(l)
+    nr_reclayer = 7
+    for i_l in range(nr_reclayer):
+        lname = 'output_rec' if(i_l==6) else 'regression_FC%d' %(i_l+3)
+        l = Dense(256//2**(i_l), activation='relu', name=lname)(l)
     
     out_params = l
 

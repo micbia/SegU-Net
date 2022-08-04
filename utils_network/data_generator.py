@@ -6,14 +6,98 @@ from datetime import datetime
 from glob import glob
 from tensorflow.keras.utils import Sequence
 
-class LightConeGenerator_Reg(Sequence):
+class LightConeGenerator_SegRec(Sequence):
     """
     Data generator of lightcone data.
 
     Michele, 21 Sep 2021: up to date the class deal with LC data that are already smoothed and calculated the noise
     """
-    def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False,
-                 data_shape=None, tobs=1000, shuffle=False):
+    def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False, data_shape=None, tobs=1000, shuffle=False):
+        """
+        Arguments:
+         tobs: int
+                observational time, for noise calcuation.
+        """
+        self.path = path
+        self.data_temp = data_temp
+        self.batch_size = batch_size
+        self.data_shape = data_shape
+        self.shuffle = shuffle
+        self.tobs = tobs
+        self.data_size = len(self.data_temp)
+        self.on_epoch_end()
+        
+        self.astro_par = np.loadtxt('%sparameters/astro_params.txt' %self.path, usecols=(1,2,3))
+        self.redshift = np.loadtxt('%s/lc_redshifts.txt' %self.path)
+
+        with open('%sparameters/user_params.txt' %self.path,'r') as f:
+            self.user_par = eval(f.read())
+
+    def __len__(self):
+        # number of batches
+        return self.data_size//self.batch_size
+
+    def __getitem__(self, index):
+        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        
+        X = np.zeros((np.append(self.batch_size, self.data_shape)))
+        y1 = np.zeros((np.append(self.batch_size, self.data_shape)))
+        y3 = np.zeros((np.append(self.batch_size, self.data_shape)))
+
+        for i, idx in enumerate(indexes):
+            # read LC
+            dT3 = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            dT2 = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            
+            # apply manipolation on the LC data
+            X[i], y1[i], y3[i] = self._lc_data(x=dT3, y1=xH, y3=dT2)
+
+        # add channel dimension
+        X = X[..., np.newaxis]
+        y1 = y1[..., np.newaxis]
+        y3 = y3[..., np.newaxis]
+
+        return X, y1, y3
+
+    def on_epoch_end(self):
+        # Updates indexes after each epoch
+        self.indexes = self.data_temp
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+    def _lc_data(self, x, y1, y3):
+        # for U-Net on slices
+        rseed2 = random.randint(0, x.shape[-1]-1)
+        x_sampled = x[:, :, rseed2].astype(np.float32)
+        y1_sampled = y1[:, :, rseed2].astype(np.float32)
+        y3_sampled = y3[:, :, rseed2].astype(np.float32)
+
+        #dT_sampled = self._RescaleData(arr=dT_sampled, a=1e-3, b=100.)
+        #xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
+        return x_sampled, y1_sampled, y3_sampled
+
+    def _RescaleData(self, arr, a=-1, b=1):
+        scaled_arr = (arr.astype(np.float32) - np.min(arr))/(np.max(arr) - np.min(arr)) * (b-a) + a
+        return scaled_arr
+        
+    def _read_cbin(self, filename, bits=32, order='C', dimensions=3):
+        assert(bits ==32 or bits==64)
+        f = open(filename)
+        temp_mesh = np.fromfile(f, count=dimensions, dtype='int32')
+        datatype = np.float32 if bits == 32 else np.float64
+        data = np.fromfile(f, dtype=datatype, count=np.prod(temp_mesh))
+        data = data.reshape(temp_mesh, order=order)
+        return data
+
+
+class LightConeGenerator_SegRec3(Sequence):
+    """
+    Data generator of lightcone data.
+
+    Michele, 21 Sep 2021: up to date the class deal with LC data that are already smoothed and calculated the noise
+    """
+    def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False, data_shape=None, tobs=1000, shuffle=False):
         """
         Arguments:
          tobs: int
@@ -44,15 +128,102 @@ class LightConeGenerator_Reg(Sequence):
         X = np.zeros((np.append(self.batch_size, self.data_shape)))
         y1 = np.zeros((np.append(self.batch_size, self.data_shape)))
         y2 = np.zeros((np.append(self.batch_size, 4)))
-        
+        y3 = np.zeros((np.append(self.batch_size, self.data_shape)))
+
         for i, idx in enumerate(indexes):
             # read LC
-            dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            dT3 = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            dT2 = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+            
+            # apply manipolation on the LC data
+            X[i], y1[i], nu, y3[i] = self._lc_data(x=dT3, y1=xH, y3=dT2)
+            y2[i] = np.append(self.astro_par[i], nu)
+
+        # add channel dimension
+        X = X[..., np.newaxis]
+        y1 = y1[..., np.newaxis]
+        y3 = y3[..., np.newaxis]
+
+        return X, y1, y2, y3
+
+    def on_epoch_end(self):
+        # Updates indexes after each epoch
+        self.indexes = self.data_temp
+        if self.shuffle == True:
+            np.random.shuffle(self.indexes)
+
+    def _lc_data(self, x, y1, y3):
+        # for U-Net on slices
+        rseed2 = random.randint(0, x.shape[-1]-1)
+        x_sampled = x[:, :, rseed2].astype(np.float32)
+        y1_sampled = y1[:, :, rseed2].astype(np.float32)
+        y3_sampled = y3[:, :, rseed2].astype(np.float32)
+
+        #dT_sampled = self._RescaleData(arr=dT_sampled, a=1e-3, b=100.)
+        #xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
+        return x_sampled, y1_sampled, t2c.z_to_nu(self.redshift[rseed2]), y3_sampled
+
+    def _RescaleData(self, arr, a=-1, b=1):
+        scaled_arr = (arr.astype(np.float32) - np.min(arr))/(np.max(arr) - np.min(arr)) * (b-a) + a
+        return scaled_arr
+        
+    def _read_cbin(self, filename, bits=32, order='C', dimensions=3):
+        assert(bits ==32 or bits==64)
+        f = open(filename)
+        temp_mesh = np.fromfile(f, count=dimensions, dtype='int32')
+        datatype = np.float32 if bits == 32 else np.float64
+        data = np.fromfile(f, dtype=datatype, count=np.prod(temp_mesh))
+        data = data.reshape(temp_mesh, order=order)
+        return data
+
+
+class LightConeGenerator_Reg(Sequence):
+    """
+    Data generator of lightcone data.
+
+    Michele, 21 Sep 2021: up to date the class deal with LC data that are already smoothed and calculated the noise
+    """
+    def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False, data_shape=None, tobs=1000, shuffle=False):
+        """
+        Arguments:
+         tobs: int
+                observational time, for noise calcuation.
+        """
+        self.path = path
+        self.data_temp = data_temp
+        self.batch_size = batch_size
+        self.data_shape = data_shape
+        self.shuffle = shuffle
+        self.tobs = tobs
+        self.data_size = len(self.data_temp)
+        self.on_epoch_end()
+        
+        self.astro_par = np.loadtxt('%sparameters/astro_params.txt' %self.path, usecols=(1,2,3))
+        self.redshift = np.loadtxt('%s/lc_redshifts.txt' %self.path)
+
+        with open('%sparameters/user_params.txt' %self.path,'r') as f:
+            self.user_par = eval(f.read())
+
+    def __len__(self):
+        # number of batches
+        return self.data_size//self.batch_size
+
+    def __getitem__(self, index):
+        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        
+        X = np.zeros((np.append(self.batch_size, self.data_shape)))
+        y1 = np.zeros((np.append(self.batch_size, self.data_shape)))
+        y2 = np.zeros((np.append(self.batch_size, 4)))
+
+        for i, idx in enumerate(indexes):
+            # read LC
+            dT3 = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
             #xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
             xH = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
             
             # apply manipolation on the LC data
-            X[i], y1[i], nu = self._lc_data(x=dT, y=xH)
+            X[i], y1[i], nu = self._lc_data(x=dT3, y1=xH)
             y2[i] = np.append(self.astro_par[i], nu)
 
         # add channel dimension
@@ -67,15 +238,15 @@ class LightConeGenerator_Reg(Sequence):
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-    def _lc_data(self, x, y):
+    def _lc_data(self, x, y1):
         # for U-Net on slices
         rseed2 = random.randint(0, x.shape[-1]-1)
-        dT_sampled = x[:, :, rseed2].astype(np.float32)
-        xH_sampled = y[:, :, rseed2].astype(np.float32)
+        x_sampled = x[:, :, rseed2].astype(np.float32)
+        y1_sampled = y1[:, :, rseed2].astype(np.float32)
 
-        #dT_sampled = self._RescaleData(arr=dT_sampled, a=1e-3, b=100.)
-        #xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
-        return dT_sampled, xH_sampled, t2c.z_to_nu(self.redshift[rseed2])
+        #x_sampled = self._RescaleData(arr=dT_sampled, a=1e-3, b=100.)
+        #y1_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
+        return x_sampled, y1_sampled, t2c.z_to_nu(self.redshift[rseed2])
 
     def _RescaleData(self, arr, a=-1, b=1):
         scaled_arr = (arr.astype(np.float32) - np.min(arr))/(np.max(arr) - np.min(arr)) * (b-a) + a
@@ -98,7 +269,7 @@ class LightConeGenerator(Sequence):
     Michele, 21 Sep 2021: up to date the class deal with LC data that are already smoothed and calculated the noise
     """
     def __init__(self, path='./', data_temp=None, batch_size=None, zipf=False,
-                 data_shape=None, tobs=1000, shuffle=False):
+                 data_shape=None, tobs=1000, shuffle=False, tta=False):
         """
         Arguments:
          tobs: int

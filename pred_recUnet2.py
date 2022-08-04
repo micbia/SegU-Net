@@ -3,6 +3,7 @@ import tools21cm as t2c
 import random, zipfile
 from tqdm import tqdm
 import matplotlib.gridspec as gridspec
+import tools21cm as t2c
 
 from sklearn.metrics import matthews_corrcoef, r2_score
 
@@ -16,12 +17,12 @@ from utils_plot.other_utils import adjust_axis, MidpointNormalize
 def LoadSegUnetModel(cfile):
     conf = NetworkConfig(cfile)
     
-    path_out = conf.resume_path
-    MODEL_EPOCH = conf.best_epoch
-    METRICS = {m:get_avail_metris(m) for m in np.append(conf.loss, conf.metrics)}
+    path_out = conf.RESUME_PATH
+    MODEL_EPOCH = conf.BEST_EPOCH
+    METRICS = {m:get_avail_metris(m) for m in np.append(conf.LOSS, conf.METRICS)}
     model_loaded = load_model('%smodel-sem21cm_ep%d.h5' %(path_out+'checkpoints/', MODEL_EPOCH), custom_objects=METRICS)
     
-    print(' Loaded model:\n %smodel-sem21cm_ep%d.h5' %(conf.resume_path, MODEL_EPOCH))
+    print(' Loaded model:\n %smodel-sem21cm_ep%d.h5' %(path_out, MODEL_EPOCH))
     return model_loaded
 
 title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | |  \| | ___| |_ \n\t\t| |  | | . ` |/ _ \ __|\n\t\t| |__| | |\  |  __/ |_ \n\t\t \____/|_| \_|\___|\__|\n'
@@ -32,16 +33,8 @@ MAKE_PLOT = False
 tobs = 1000
 
 path_pred = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/inputs/prediction_set/'
-#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/17-05T09-23-54_128slice/'
-#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/19-05T09-46-01_128slice/'
-#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/19-05T17-07-12_128slice/'
-path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/19-05T17-45-15_128slice/'
-#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/03-11T12-02-05_128slice/'
+path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/16-06T13-25-30_128slice/'
 config_file = path_in+'net_Unet_lc.ini'
-#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/24-02T09-32-28_10cube/'
-#path_in = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/outputs/28-03T10-58-31_10cube/'
-#config_file = path_in+'net_LSTMUnet_lc.ini'
-
 path_out = path_in+'prediction/'
 try:
     os.makedirs(path_out)
@@ -60,29 +53,34 @@ redshift = np.loadtxt('%slc_redshifts.txt' %path_pred)
 X = np.moveaxis(dT3, -1, 0)
 Y = np.moveaxis(dT2, -1, 0)
 xH = np.moveaxis(xH, -1, 0)
-############## for LSTM
-"""
-freq_size = 10
-idx = np.arange(0, redshift.size-10, 1, dtype=int)
-long_X = np.zeros((np.append(np.append(len(idx), freq_size), X.shape[1:])))
-#long_Y = np.zeros_like(Y)
-#short_redshift = np.zeros(np.append(len(idx), freq_size))
-for i_b, rseed in enumerate(idx):
-    long_X[i_b] = X[rseed:rseed+freq_size,...].astype(np.float32)
-    #long_Y[i_b] = np.array([Y[i,...].astype(np.float32) for i in range(rseed-freq_size//2, rseed+freq_size//2)])
-    #short_redshift[i_b] = np.array([redshift[i] for i in range(rseed-freq_size//2, rseed+freq_size//2)])
-
-X = long_X[..., np.newaxis]
-#Y = long_Y
-"""
-#######################
-print(X.shape, Y.shape)
 
 # Load & predict with model
 model = LoadSegUnetModel(config_file)
 X_seg = model.predict(X, verbose=0)
-print(X_seg[0], X_seg[1])
+
+#X_seg = model.predict(X, verbose=0)
+astro_params = X_seg[1]
+print(X_seg[0].shape, X_seg[1].shape)
+
+np.save(path_out+'dT_pred', X_seg[0])
+np.save(path_out+'astroparams_pred', X_seg[1])
+
+X_seg = X_seg[0]
 X_seg = X_seg.squeeze()
+
+nu = t2c.z_to_nu(redshift)
+pred_nu = astro_params[:,-1]
+res = (pred_nu - nu)/nu
+plt.plot(redshift, res)
+plt.ylabel(r'$(\nu_{pred} - \nu_{true})/\nu_{true}$'), plt.xlabel('z')
+plt.savefig(path_out+'res_nu.png', bbox_inches='tight'), plt.clf()
+
+plt.scatter(nu, pred_nu, label=r'$\nu_{obs}$')
+plt.plot(nu, nu, 'k--')
+plt.xlabel(r'$\nu_{true}$'), plt.ylabel(r'$\nu_{pred}$')
+plt.legend()
+plt.savefig('corr_nu.png', bbox_inches='tight'), plt.clf()
+
 #X_seg = np.vstack((np.zeros(np.append(10, X_seg.shape[1:])), X_seg.squeeze()))
 #X_seg = np.round(X_seg.squeeze())
 
@@ -124,6 +122,8 @@ for i_z in tqdm(range(X_seg.shape[0])):
     r2score_seg[i_z] = r2_score(m, x)
 
     xn_mask[i_z] = np.mean(xH[i_z])
+
+np.savetxt(path_out+'r2score_seg.txt', r2score_seg)
 
 np.save(path_out+'Pk_seg', ps_seg)
 np.save(path_out+'Pk_true', ps_true)
