@@ -4,8 +4,96 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Flatten, BatchNormalization, Activation, Dropout, concatenate, Multiply
 from tensorflow.keras.layers import Dense, Conv2D, Conv2DTranspose, Conv3D, Conv3DTranspose, TimeDistributed
 from tensorflow.keras.layers import ConvLSTM2D #, ConvLSTM3D only from tf v2.6.0
-from tensorflow.keras.layers import MaxPooling2D, MaxPooling3D
+from tensorflow.keras.layers import MaxPooling2D, MaxPooling3D, AveragePooling2D, AveragePooling3D
 from tensorflow.keras.utils import plot_model
+
+
+def Unet(img_shape, params, path='./'):
+    # print message at runtime
+    print('Create %dD U-Net network with %d levels...\n' %(np.size(img_shape)-1, params['depth']))
+
+    if(np.size(img_shape)-1 == 2):
+        Conv = Conv2D
+        ConvTranspose = Conv2DTranspose
+        Pooling = MaxPooling2D
+        #Pooling = AveragePooling2D
+        ps = (2, 2)
+    elif(np.size(img_shape)-1 == 3):
+        Conv = Conv3D
+        Pooling = MaxPooling3D
+        ConvTranspose = Conv3DTranspose
+        ps = (2, 2, 2)
+    else:
+        print('???')
+
+    def Conv_Layers(prev_layer, kernel_size, nr_filts, layer_name):
+        # first block
+        a = Conv(filters=nr_filts, kernel_size=kernel_size, padding='same',
+                   kernel_initializer="he_normal", name='%s_C1' %layer_name)(prev_layer)
+        a = BatchNormalization(name='%s_BN1' %layer_name)(a)
+        a = Activation(params['activation'], name='%s_A1' %layer_name)(a)
+        # second block
+        a = Conv2D(filters=nr_filts, kernel_size=kernel_size, padding='same',
+                   kernel_initializer="he_normal", name='%s_C2' %layer_name)(a)
+        a = BatchNormalization(name='%s_BN2' %layer_name)(a)
+        a = Activation(params['activation'], name='%s_A2' %layer_name)(a)
+        return a
+    
+    # network input layer
+    img_input = Input(shape=img_shape, name='Image')
+    network_layers = {'Image':img_input}
+    l = img_input
+
+    # U-Net Encoder layers
+    for i_l in range(params['depth']):
+        # convolution
+        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='E%d' %(i_l+1))
+        network_layers['E%d_A2' %(i_l+1)] = lc
+
+        # pooling
+        l = Pooling(pool_size=ps, name='E%d_P' %(i_l+1))(lc)
+        network_layers['E%d_P' %(i_l+1)] = l
+
+        # dropout
+        do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
+        l = Dropout(do, name='E%d_D' %(i_l+1))(l)
+        network_layers['E%d_D' %(i_l+1)] = l
+
+
+    # bottom layer
+    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='B')
+    network_layers['B'] = l
+    
+    # U-Net Decoder layers
+    for i_l in range(params['depth'])[::-1]:
+        # transposed convolution
+        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='E%d_DC' %(i_l+1))(l)
+        network_layers['E%d_DC' %(i_l+1)] = lc
+
+        # concatenate
+        l = concatenate([lc, network_layers['E%d_A2' %(i_l+1)]], name='concatenate_E%d_A2' %(i_l+1))
+        network_layers['concatenate_E%d_A2' %(i_l+1)] = l
+
+        # dropout
+        l = Dropout(params['dropout'], name='D%d_D' %(i_l+1))(l)
+        network_layers['D%d_D' %(i_l+1)] = l
+
+        # convolution
+        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='D%d_C' %(i_l+1))
+        network_layers['D%d_C' %(i_l+1)] = l
+
+    # Outro Layer
+    output_image = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_C')(l)
+    network_layers['out_C'] = output_image
+
+    if(params['final_activation'] != None):
+        output_image = Activation(params['final_activation'], name='final_activation')(output_image)
+        network_layers['out_img'] = output_image
+
+    model = Model(inputs=[img_input], outputs=[output_image], name='Unet')
+
+    #plot_model(model, to_file=path+'UNet_visualisation.png', show_shapes=True, show_layer_names=True)
+    return model
 
 
 def ChonkyBoy(img_shape, params, path='./'):
@@ -289,93 +377,6 @@ def ChonkyBoy3(img_shape, params, path='./'):
 
     plot_model(model, to_file=path+'ChonkyBoy_visualisation.png', show_shapes=True, show_layer_names=True)
     return model
-
-
-def Unet(img_shape, params, path='./'):
-    # print message at runtime
-    print('Create %dD U-Net network with %d levels...\n' %(np.size(img_shape)-1, params['depth']))
-
-    if(np.size(img_shape)-1 == 2):
-        Conv = Conv2D
-        ConvTranspose = Conv2DTranspose
-        Pooling = MaxPooling2D
-        ps = (2, 2)
-    elif(np.size(img_shape)-1 == 3):
-        Conv = Conv3D
-        Pooling = MaxPooling3D
-        ConvTranspose = Conv3DTranspose
-        ps = (2, 2, 2)
-    else:
-        print('???')
-
-    def Conv_Layers(prev_layer, kernel_size, nr_filts, layer_name):
-        # first block
-        a = Conv(filters=nr_filts, kernel_size=kernel_size, padding='same',
-                   kernel_initializer="he_normal", name='%s_C1' %layer_name)(prev_layer)
-        a = BatchNormalization(name='%s_BN1' %layer_name)(a)
-        a = Activation(params['activation'], name='%s_A1' %layer_name)(a)
-        # second block
-        a = Conv2D(filters=nr_filts, kernel_size=kernel_size, padding='same',
-                   kernel_initializer="he_normal", name='%s_C2' %layer_name)(a)
-        a = BatchNormalization(name='%s_BN2' %layer_name)(a)
-        a = Activation(params['activation'], name='%s_A2' %layer_name)(a)
-        return a
-    
-    # network input layer
-    img_input = Input(shape=img_shape, name='Image')
-    network_layers = {'Image':img_input}
-    l = img_input
-
-    # U-Net Encoder layers
-    for i_l in range(params['depth']):
-        # convolution
-        lc = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='E%d' %(i_l+1))
-        network_layers['E%d_A2' %(i_l+1)] = lc
-
-        # pooling
-        l = Pooling(pool_size=ps, name='E%d_P' %(i_l+1))(lc)
-        network_layers['E%d_P' %(i_l+1)] = l
-
-        # dropout
-        do = 0.5*params['dropout'] if i_l == 0 else params['dropout']
-        l = Dropout(do, name='E%d_D' %(i_l+1))(l)
-        network_layers['E%d_D' %(i_l+1)] = l
-
-
-    # bottom layer
-    l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//img_shape[-1], kernel_size=params['kernel_size'], layer_name='B')
-    network_layers['B'] = l
-    
-    # U-Net Decoder layers
-    for i_l in range(params['depth'])[::-1]:
-        # transposed convolution
-        lc = ConvTranspose(filters=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], strides=ps, padding='same', name='E%d_DC' %(i_l+1))(l)
-        network_layers['E%d_DC' %(i_l+1)] = lc
-
-        # concatenate
-        l = concatenate([lc, network_layers['E%d_A2' %(i_l+1)]], name='concatenate_E%d_A2' %(i_l+1))
-        network_layers['concatenate_E%d_A2' %(i_l+1)] = l
-
-        # dropout
-        l = Dropout(params['dropout'], name='D%d_D' %(i_l+1))(l)
-        network_layers['D%d_D' %(i_l+1)] = l
-
-        # convolution
-        l = Conv_Layers(prev_layer=l, nr_filts=params['coarse_dim']//2**(params['depth']-i_l)*img_shape[-1], kernel_size=params['kernel_size'], layer_name='D%d_C' %(i_l+1))
-        network_layers['D%d_C' %(i_l+1)] = l
-
-    # Outro Layer
-    output_image = Conv(filters=img_shape[-1], kernel_size=params['kernel_size'], strides=1, padding='same', name='out_C')(l)
-    network_layers['out_C'] = output_image
-
-    #output_image = Activation(params['final_activation'], name='final_activation')(output_image)
-    #network_layers['out_img'] = output_image
-
-    model = Model(inputs=[img_input], outputs=[output_image], name='Unet')
-
-    plot_model(model, to_file=path+'UNet_visualisation.png', show_shapes=True, show_layer_names=True)
-    return model
-
 
 
 def LSTM_Unet(img_shape, params, path='./'):

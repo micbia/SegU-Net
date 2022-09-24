@@ -1,0 +1,34 @@
+#!/bin/bash
+#SBATCH --job-name=serene
+#SBATCH --output=logs/serene.%J.out
+#SBATCH --error=logs/serene.%J.err
+
+##SBATCH --job-name=lstm_unet
+##SBATCH --output=logs/segunet_lstm.%J.out
+##SBATCH --error=logs/segunet_lstm.%J.err
+
+##SBATCH --job-name=talos
+##SBATCH --output=logs/talos.%J.out
+##SBATCH --error=logs/talos.%J.err
+
+#SBATCH --nodes=1
+#SBATCH --time=24:00:00
+#SBATCH --gres=gpu:4
+#SBATCH --gpus-per-node=4
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=mb756@sussex.ac.uk
+
+module load python/3.8.6
+module load cuda/10.1 
+module load tensorflow/2.3.1
+
+CONFIG_PATH="$HOME/SegU-Net/config"
+#CONFIG_PATH="$HOME/data/outputs/16-06T13-25-30_128slice"
+#CONFIG_PATH="$HOME/data/outputs/24-06T14-17-37_128slice"
+
+source $HOME/nnevn/bin/activate
+#python opt_talos.py $CONFIG_PATH/net_Unet_lc.ini
+python segUNet.py $CONFIG_PATH/net_Unet_lc.ini
+
+#python pred21cm.py $CONFIG_PATH/net2D_lc_full.ini
+deactivate

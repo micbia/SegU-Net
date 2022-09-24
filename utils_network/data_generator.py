@@ -282,7 +282,6 @@ class LightConeGenerator(Sequence):
         self.shuffle = shuffle
         self.zipf = zipf
         if(self.zipf):
-            # the index of the array indicate the number of the 
             self.content = np.loadtxt(self.path+'data/content.txt', dtype=int)
             self.path_in_zip = self.path[self.path[:-1].rfind('/')+1:]+'data/'
         self.tobs = tobs
@@ -293,6 +292,8 @@ class LightConeGenerator(Sequence):
         with open('%sparameters/user_params.txt' %self.path,'r') as f:
             self.user_par = eval(f.read())
 
+        self.redshift = np.loadtxt('%slc_redshifts.txt' %self.path)
+
     def __len__(self):
         # number of batches
         return self.data_size//self.batch_size
@@ -300,6 +301,9 @@ class LightConeGenerator(Sequence):
     def __getitem__(self, index):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         
+        #self.random_xHI = random.random()
+        self.random_xHI = round(random.uniform(0., 0.15), 4)        # TODO: change this before recompile
+
         X = np.zeros((np.append(self.batch_size, self.data_shape)))
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
         for i, idx in enumerate(indexes):
@@ -330,9 +334,11 @@ class LightConeGenerator(Sequence):
                 X[i], y[i] = self._lc_data(x=dT, y=xH)
             else:
                 # read LC
-                dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
-                #xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
-                xH = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                #dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                dT = self._read_cbin(filename='%sdT4pca_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+
+                xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                #xH = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
                 
                 # apply manipolation on the LC data
                 X[i], y[i] = self._lc_data(x=dT, y=xH)
@@ -352,9 +358,18 @@ class LightConeGenerator(Sequence):
     def _lc_data(self, x, y):
         if(np.min(self.data_shape) == np.max(self.data_shape)):
             # for U-Net on slices
-            rseed2 = random.randint(0, x.shape[-1]-1)
+            #rseed2 = random.randint(0, x.shape[-1]-1)
+            rseed2 = np.argmin(abs(np.mean(y, axis=(0,1)) - self.random_xHI))
+            
             dT_sampled = x[:, :, rseed2].astype(np.float32)
             xH_sampled = y[:, :, rseed2].astype(np.float32)
+            #print(rseed2, np.mean(xH_sampled), self.redshift[rseed2], np.std(dT_sampled))
+            #print(self.random_xHI, np.mean(xH_sampled), '\n')
+
+            # add some additionl smoothing of the PCA data based on the tools21cm smoothing
+            #baseline = 2. # km
+            #fwhm = (1+self.redshift[rseed2])*21e-5/baseline * t2c.z_to_cdist(self.redshift[rseed2]) * self.user_par['HII_DIM']/self.user_par['BOX_LEN']
+            #dT_sampled = t2c.smooth_gauss(input_array=x[:, :, rseed2], fwhm=fwhm).astype(np.float32)
         else:
             # for LSTM U-Net on frequency range
             freq_size = np.min(self.data_shape)
@@ -367,88 +382,18 @@ class LightConeGenerator(Sequence):
         #xH_sampled = self._RescaleData(arr=xH_sampled, a=1e-7, b=1.-1e-7)
         return dT_sampled, xH_sampled
 
-
     def _RescaleData(self, arr, a=-1, b=1):
         scaled_arr = (arr.astype(np.float32) - np.min(arr))/(np.max(arr) - np.min(arr)) * (b-a) + a
         return scaled_arr
-
         
     def _read_cbin(self, filename, bits=32, order='C', dimensions=3):
-        ''' Read a binary file with three inital integers (a cbin file).
-        
-        Parameters:
-                * filename (string): the filename to read from
-                * bits = 32 (integer): the number of bits in the file
-                * order = 'C' (string): the ordering of the data. Can be 'C'
-                        for C style ordering, or 'F' for fortran style.
-                * dimensions (int): the number of dimensions of the data (default:3)
-                        
-        Returns:
-                The data as a three dimensional numpy array.
-        '''
-
         assert(bits ==32 or bits==64)
-
         f = open(filename)
-
         temp_mesh = np.fromfile(f, count=dimensions, dtype='int32')
-
         datatype = np.float32 if bits == 32 else np.float64
         data = np.fromfile(f, dtype=datatype, count=np.prod(temp_mesh))
         data = data.reshape(temp_mesh, order=order)
         return data
-
-    #TODO: smoothing for LC data
-    def _lc_noise_smt_dT(self, lc1, idx):
-        assert idx == self.astro_par[0,idx]
-        z = self.astro_par[1, idx]
-
-        noise_lc = t2c.noise_lightcone(ncells=lc.brightness_temp.shape[0], zs=lc.lightcone_redshifts, obs_time=self.tobs, save_uvmap=self.uvfile, boxsize=self.user_par['BOX_LEN'])
-
-        # calculate uv-coverage 
-        if(self.zipf):
-            with zipfile.ZipFile(self.path_uvcov) as myzip: 
-                with myzip.open('uv_coverage_%d/uvmap_z%.3f.npy' %(self.user_par['HII_DIM'], z)) as myfile1: 
-                    uv = np.load(myfile1)
-                with myzip.open('uv_coverage_%d/Nantmap_z%.3f.npy' %(self.user_par['HII_DIM'], z)) as myfile2: 
-                    Nant = np.load(myfile2)
-        else:
-            file_uv = '%suvmap_z%.3f.npy' %(self.path_uvcov, z)
-            file_Nant = '%sNantmap_z%.3f.npy' %(self.path_uvcov, z)
-
-            if(os.path.exists(file_uv) and os.path.exists(file_Nant)):
-                    uv = np.load(file_uv)
-                    Nant = np.load(file_Nant)
-            else:
-                #SKA-Low 2016 configuration
-                uv, Nant = t2c.get_uv_daily_observation(self.user_par['HII_DIM'], z, filename=None,
-                                                        total_int_time=6.0, int_time=10.0,
-                                                        boxsize=self.user_par['BOX_LEN'],
-                                                        declination=-30.0, verbose=False)
-                np.save(file_uv, uv)
-                np.save(file_Nant, Nant)
-
-        # calculate Noise cube
-        random.seed(datetime.now())
-        noise_cube = t2c.noise_cube_coeval(self.user_par['HII_DIM'], z, depth_mhz=None,
-                                        obs_time=self.tobs, filename=None, boxsize=self.user_par['BOX_LEN'],
-                                        total_int_time=6.0, int_time=10.0, declination=-30.0, 
-                                        uv_map=uv, N_ant=Nant, fft_wrap=False, verbose=False)
-
-        dT3 = t2c.smooth_coeval(dT1+noise_cube, z, 
-                                box_size_mpc=self.user_par['HII_DIM'],
-                                max_baseline=2.0, ratio=1.0, nu_axis=2)
-
-        return dT3
-
-    def _lc_smt_xH(self, xH_box, idx):
-        assert idx == self.astro_par[0,idx]
-        z = self.astro_par[1, idx]
-
-        smt_xn = t2c.smooth_coeval(xH_box, z, box_size_mpc=self.user_par['HII_DIM'], max_baseline=2.0, ratio=1.0, nu_axis=2)
-        mask_xn = smt_xn>0.5
-
-        return mask_xn.astype(int)
 
 
 class DataGenerator(Sequence):

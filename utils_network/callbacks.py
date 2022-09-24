@@ -140,6 +140,7 @@ class SaveModelCheckpoint(Callback):
         self.period = period
         self.epochs_since_last_save = 0
         self.best = best
+        self.fmt_save = filepath[-2:]
 
         if mode not in ['auto', 'min', 'max']:
             warnings.warn('SaveModelCheckpoint mode %s is unknown, fallback to auto mode.' % (mode), RuntimeWarning)
@@ -163,6 +164,23 @@ class SaveModelCheckpoint(Callback):
                 if(self.best == None):
                     self.best = np.Inf
 
+    def on_train_begin(self, logs=None):
+        self.path = self.filepath[:self.filepath.rfind('/checkpoint')+1]
+        self.ini_file = glob(self.path+'*.ini')[0]
+
+        # overwrite resume path to configuration trianing file
+        with open(self.ini_file, 'r') as f:
+            lines = f.readlines()
+            new_lines = lines.copy()
+            for i, line in enumerate(lines):
+                if('RESUME_PATH = None' in line):
+                    new_lines[i] = line.replace('None', self.path)
+                else:
+                    new_lines[i] = line
+
+        with open(self.ini_file, 'w') as new_f:
+            new_f.write(''.join(new_lines))
+
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         self.epochs_since_last_save += 1
@@ -180,15 +198,36 @@ class SaveModelCheckpoint(Callback):
                         self.best = current
                         if self.save_weights_only:
                             self.model.save_weights(filepath, overwrite=True)
-                        else:
+                        elif self.fmt_save == 'h5':
                             self.model.save(filepath, overwrite=True)
+                        elif self.fmt_save == 'tf':
+                            self.model.save(filepath, overwrite=True, save_format='tf')
+                        FLAG_IMPROVEMENT = True
                     else:
                         if self.verbose > 0:
                             print('\nEpoch %05d: %s did not improve from %0.5f' %(epoch + 1, self.monitor, self.best))
+                        FLAG_IMPROVEMENT = False
+                    
+                    self.model.save(self.path+'checkpoints/last_model.tf', overwrite=True, save_format='tf')
             else:
                 if self.verbose > 0:
                     print('\nEpoch %05d: saving model to %s' % (epoch + 1, filepath))
                 if self.save_weights_only:
                     self.model.save_weights(filepath, overwrite=True)
-                else:
+                elif self.fmt_save == 'h5':
                     self.model.save(filepath, overwrite=True)
+                elif  self.fmt_save == 'tf':
+                    self.model.save(filepath, overwrite=True, save_format='tf')
+
+        # overwrite best and resume epoch to configuration trianing file
+        with open(self.ini_file, 'r') as f:
+            lines = f.readlines()
+            new_lines = lines.copy()
+            for i, line in enumerate(lines):
+                if('BEST_EPOCH = ' in line and FLAG_IMPROVEMENT):
+                    new_lines[i] = 'BEST_EPOCH = %d\n' %(epoch + 1)
+                if('RESUME_EPOCH = ' in line):
+                    new_lines[i] = 'RESUME_EPOCH = %d\n' %(epoch + 1)
+
+        with open(self.ini_file, 'w') as new_f:
+            new_f.write(''.join(new_lines))

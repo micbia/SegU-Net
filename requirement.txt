@@ -5,3 +5,5 @@ scikit-optimize
 pydot
 scipy==1.4.1
 talos==1.0.0
+graphviz
+h5py==2.10.0

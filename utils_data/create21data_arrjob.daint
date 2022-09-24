@@ -1,0 +1,47 @@
+#!/bin/sh
+#SBATCH --job-name=py21cm
+#SBATCH --ntasks 1
+#SBATCH --account=sk09
+#SBATCH --time=24:00:00
+#SBATCH --array=0-99
+#SBATCH --output=../logs/lc21cm%A.%j.out
+#SBATCH --error=../logs/lc21cm%A.%j.err
+#SBATCH -C gpu
+##SBATCH --mem 16G
+##SBATCH -c 8
+
+#SBATCH --mail-type=END
+#SBATCH --mail-user=michele.bianco@epfl.ch
+
+module purge
+module load daint-gpu
+module load gcc/9.3.0
+module load cudatoolkit/10.2.89_3.28-2.1__g52c0314
+
+# export conda on shell
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate py21cmenv
+
+# create folder structure
+#PATH_OUT='/scratch/snx3000/mibianco/dataLC_128_train_190922/'
+#PATH_OUT='/scratch/snx3000/mibianco/dataLC_128_valid_190922/'
+#PATH_OUT='/scratch/snx3000/mibianco/dataLC_128_test_190922/'
+if [ -d "$PATH_OUT" ]; then
+    echo " Resume 21cmFast data..."
+else
+    echo " Create new 21cmFast data..."
+    mkdir $PATH_OUT
+    mkdir $PATH_OUT/data
+    mkdir $PATH_OUT/images
+    mkdir $PATH_OUT/parameters
+fi
+
+#python create_lightcone_21cmfast.py $PATH_OUT
+
+#python run_lc.py $PATH_OUT
+
+PATH_IN='/store/ska/sk09/segunet/inputs/dataLC_128_train_190922/'
+PATH_OUT='/scratch/snx3000/mibianco/test_pca/'
+python create_lightcone_21cmfast_rerun.py $PATH_IN $PATH_OUT
+
+conda deactivate

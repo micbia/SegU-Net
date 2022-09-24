@@ -1,4 +1,4 @@
-import numpy as np, os, matplotlib.pyplot as plt
+import numpy as np, os, matplotlib.pyplot as plt, math
 from glob import glob
 from PIL import Image
 
@@ -104,17 +104,31 @@ class adjust_axis:
         self.step = step
         self.fmt = fmt
         
-        loc_f = self.get_axis_locs()
+        ord_magn = math.floor(math.log10(step))
+        loc_f, vplot = self.get_axis_locs(ord_magn)
+
         if(xy == 'x'):
             plt.xticks(loc_f)
-            axis.set_xticklabels([int(round(varr[i_n])) for i_n in loc_f])
+            axis.set_xticklabels(vplot)
         elif(xy == 'y'):
             plt.yticks(loc_f)
-            axis.set_yticklabels([int(round(varr[i_n])) for i_n in loc_f])
+            axis.set_yticklabels(vplot)
+        elif(xy == 'xy'):
+            plt.xticks(loc_f)
+            axis.set_xticklabels(vplot)
+            plt.yticks(loc_f)
+            axis.set_yticklabels(vplot)
         
-    def get_axis_locs(self):    
-        v_max = int(round(self.varr.max()/self.to_round)*self.to_round) if int(round(self.varr.max()/self.to_round)*self.to_round) <= self.varr.max() else int(round(self.varr.max()/self.to_round)*self.to_round)-self.to_round
-        v_min = int(round(self.varr.min()/self.to_round)*self.to_round) if int(round(self.varr.min()/self.to_round)*self.to_round) >= self.varr.min() else int(round(self.varr.min()/self.to_round)*self.to_round)+self.to_round
-        v_plot = np.arange(v_min, v_max+self.step, self.step)
+    def get_axis_locs(self, ord_magn):    
+        if(ord_magn<0):
+            v_max = int(round(self.varr.max()/self.to_round)*self.to_round) if int(round(self.varr.max()/self.to_round)*self.to_round) <= self.varr.max() else int(round(self.varr.max()/self.to_round)*self.to_round)-self.to_round
+            v_min = int(round(self.varr.min()/self.to_round)*self.to_round) if int(round(self.varr.min()/self.to_round)*self.to_round) >= self.varr.min() else int(round(self.varr.min()/self.to_round)*self.to_round)+self.to_round
+            v_plot = np.arange(v_min, v_max+self.step, self.step)
+        else:
+            v_max = int(self.to_round)
+            v_min = 0
+            v_plot = np.arange(v_min, v_max, self.step)
+
         loc_v = np.array([np.argmin(abs(self.varr-v_plot[i])) for i in range(v_plot.size)]).astype(self.fmt)
-        return loc_v
+
+        return loc_v, v_plot 

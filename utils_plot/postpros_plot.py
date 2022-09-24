@@ -15,7 +15,11 @@ script, path = argv
 os.chdir(path)
 
 # Load Data
-name_val_metric = np.sort(glob('val_*.txt')) 
+#name_val_metric = np.sort(glob('val_*.txt')) 
+name_val_metric = glob('val_iou*.txt')
+name_val_metric = np.append(name_val_metric, glob('val_matthews_coef*.txt'))
+name_val_metric = np.append(name_val_metric, glob('val_FalseNegativeRate*'))
+name_val_metric = np.append(name_val_metric, glob('val_FalsePositiveRate*'))
 name_metric = [sf[4:] for sf in name_val_metric] 
 epoch = int(name_metric[0][name_metric[0].rfind('-')+1:name_metric[0].rfind('.')]) 
 
@@ -23,7 +27,7 @@ loss, val_loss = np.loadtxt('loss_ep-%d.txt' %epoch), np.loadtxt('val_loss_ep-%d
 lr = np.loadtxt('lr_ep-%d.txt' %epoch)
 
 idx_best_mode = np.argmin(val_loss)
-print('best loss (i=%d):\t%.3e' %(idx_best_mode, np.min(val_loss)))
+print('best loss (epoch = %d / %d):\t%.3e' %(idx_best_mode+1, val_loss.size, val_loss[idx_best_mode]))
 
 # Plot
 fig1 = plt.figure(figsize=(16, 6)) 
@@ -33,7 +37,7 @@ ax1 = plt.subplot(1,2,1)
 ax1.set_ylabel('Loss functions'), ax1.set_xlabel('Epoch') 
 ax1.semilogy(val_loss, color='cornflowerblue', label='Validation Loss', ls='--')  
 ax1.semilogy(loss, color='navy', label='Training Loss') 
-ax1.scatter(idx_best_mode, val_loss[idx_best_mode], marker="x", color="r", label="Best Model: %.3e" %(np.min(val_loss)))
+ax1.scatter(idx_best_mode, val_loss[idx_best_mode], marker="x", color="r", label="Best Model: %.3e" %(np.min(val_loss[idx_best_mode])))
 plot_min, plot_max = np.min([loss.min(), val_loss.min()])*0.9, np.min([loss.max(), val_loss.max()])
 ax1.set_xlim(-1, loss.size), ax1.set_ylim(plot_min, plot_max)
 
@@ -58,8 +62,8 @@ for i_nm, (nm, vnm) in enumerate(zip(name_metric, name_val_metric)):
         ax2.scatter(idx_best_mode, val_metric[idx_best_mode], marker="x", color="r")
         i_cl += 1
 
-ax2.set_xlim(-1,loss.size), ax2.set_ylim(0.5, 0.85)
-#ax2.set_ylim(0., 1.0)
+ax2.set_xlim(-1,loss.size)#, ax2.set_ylim(0.6, 0.9)
+ax2.set_ylim(0., 1.0)
 ax4 = ax2.twinx() 
 ax4.semilogy(lr, color='k', alpha=0.4, label='Learning Rate') 
 ax4.set_ylabel('Learning Rate') 
@@ -69,11 +73,11 @@ ax4.set_ylabel('Learning Rate')
 ax2.legend(loc='best')
 
 ax1.xaxis.set_minor_locator(ticker.MultipleLocator(1))
-ax1.xaxis.set_major_locator(ticker.MultipleLocator(20))
+ax1.xaxis.set_major_locator(ticker.MultipleLocator(10))
 ax2.xaxis.set_minor_locator(ticker.MultipleLocator(1))
-ax2.xaxis.set_major_locator(ticker.MultipleLocator(20))
-#ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
-#ax2.yaxis.set_minor_locator(ticker.MultipleLocator(0.01))
+ax2.xaxis.set_major_locator(ticker.MultipleLocator(10))
+ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+ax2.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
 
 ax1.tick_params(axis='both', length=7, width=1.1)
 ax1.tick_params(which='minor', axis='both', length=3, width=1.1)

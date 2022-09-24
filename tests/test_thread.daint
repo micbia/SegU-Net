@@ -1,0 +1,25 @@
+#!/bin/bash -l
+#SBATCH --job-name=test_thread
+#SBATCH --account=sk09
+#SBATCH --array=0-1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=5
+
+#SBATCH --time=00:01:00
+#SBATCH --output=../logs/test_thread-%j.out
+#SBATCH --error=../logs/test_thread-%j.err
+#SBATCH --mail-type=END
+#SBATCH --mail-user=michele.bianco@epfl.ch
+##SBATCH --mem 16G
+#SBATCH -C gpu
+
+# export conda on shell
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate py21cmenv
+
+# start thread job within array job
+for A in $(seq -w 0 4);
+do
+    python test_thread.py $A &
+done
+conda deactivate

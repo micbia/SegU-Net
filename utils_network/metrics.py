@@ -2,6 +2,7 @@
 import tensorflow.keras.backend as K
 import numpy as np
 import tensorflow as tf
+import warnings
 
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.framework import ops 
@@ -49,9 +50,18 @@ def get_avail_metris(mname):
         metric = mae_accuracy
     elif(mname == 'local_loss'):
         metric = local_loss
+    elif(mname == 'FalseNegativeRate'):
+        metric = FalseNegativeRate
+    elif(mname == 'FalsePositiveRate'):
+        metric = FalsePositiveRate
+    elif(mname == 'TruePositiveRate'):
+        metric = precision
+    elif(mname == 'TNR'):
+        metric = specificy
+    elif(mname == 'balanced_accuracy'):
+        metric = balanced_accuracy
     else:
         ValueError(' No corresponding metric found!')
-
     return metric
 
 def matthews_coef(y_true, y_pred):
@@ -74,14 +84,50 @@ def matthews_coef(y_true, y_pred):
     denominator = K.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
     return numerator / (denominator + K.epsilon())
 
-
-def precision(y_true, y_pred):
-    # custom Precision metrics
+def confusion_matrix(y_true, y_pred):
     y_true, y_pred = K.clip(y_true, K.epsilon(), 1-K.epsilon()), K.clip(y_pred, K.epsilon(), 1-K.epsilon())
     TP = K.sum(y_pred * y_true)
-    FP = K.sum(y_pred * (1 - y_true))
+    FN = K.sum((1 - y_pred) * y_true)
+    TN = K.sum((1-y_pred) * (1-y_true))
+    FP = K.sum(y_pred * (1-y_true))
+    return TN, FP, FN, TP
+
+def precision(y_true, y_pred):
+    ''' Precision or a.k.a. True Positive Rate (TPR)
+        The fraction of prediciton CORRECTLY guessed as positive (neutral). 
+        You want this quantity to be as close as possible to 1 for a perfect prediction.
+    '''
+    TN, FP, FN, TP = confusion_matrix(y_true, y_pred)
     return TP/(TP + FP + K.epsilon())
 
+def specificy(y_true, y_pred):
+    ''' Specificy or a.k.a. True Negative Rate (TNR)
+        The fraction of prediciton CORRETLY guessed as negative (ionised). 
+        You want this quantity to be as close as possible to 1 for a perfect prediction.
+    '''
+    TN, FP, FN, TP = confusion_matrix(y_true, y_pred)
+    return TN/(FP + TN + K.epsilon())
+
+def FalsePositiveRate(y_true, y_pred):
+    ''' False Positive Rate (FPR)
+        The fraction of prediciton WRONGLY guessed as positive (neutral). 
+        You want this quantity to be as small as possible (almost 0) for a perfect prediction.
+    '''
+    TN, FP, FN, TP = confusion_matrix(y_true, y_pred)
+    return FP/(FP + TN + K.epsilon())
+
+def FalseNegativeRate(y_true, y_pred):
+    ''' False Negative Rate (FNR)
+        The fraction of prediciton WRONGLY guessed as negative (ionised). 
+        You want this quantity to be as small as possible (almost 0) for a perfect prediction.
+    '''
+    TN, FP, FN, TP = confusion_matrix(y_true, y_pred)
+    return FN/(FN + TP + K.epsilon())
+
+def balanced_accuracy(y_true, y_pred):
+    TPR = precision(y_true, y_pred)
+    TNR = specificy(y_true, y_pred)
+    return 0.5*(TPR + TNR) 
 
 def recall(y_true, y_pred):
     # custom recall metrics
@@ -113,7 +159,6 @@ def weighted_binary_crossentropy(y_true, y_pred):
     # Return the mean error
     return K.mean(weighted_b_ce)
 
-
 def sigmoid_balanced_cross_entropy_with_logits(_sentinel=None, labels=None, logits=None, beta=None, name=None):
     nn_ops._ensure_xent_args("sigmoid_cross_entropy_with_logits", _sentinel,labels, logits)
     with ops.name_scope(name, "logistic_loss", [logits, labels]) as name: 
@@ -129,17 +174,80 @@ def sigmoid_balanced_cross_entropy_with_logits(_sentinel=None, labels=None, logi
         neg_abs_logits = array_ops.where(cond, -logits, logits) 
         #beta=0.5
         balanced_cross_entropy = relu_logits*(1.-beta)-logits*labels*(1.-beta)+math_ops.log1p(math_ops.exp(neg_abs_logits))*((1.-beta)*(1.-labels)+beta*labels)
-        return tf.reduce_mean(balanced_cross_entropy)
-
+        #return tf.reduce_mean(balanced_cross_entropy)
+        return balanced_cross_entropy
 
 def balanced_cross_entropy(y_true, y_pred):
     """
-    To decrease the number of false negatives, set beta>1. To decrease the number of false positives, set beta<1.
+    To decrease the number of false negatives, set beta~1. To decrease the number of false positives, set beta~0.
     """
-    beta = 1 - tf.maximum(tf.reduce_mean( y_true) / tf.reduce_sum(y_true), tf.keras.backend.epsilon())
+    #beta = tf.maximum(tf.reduce_mean(1-y_true), tf.keras.backend.epsilon())
+    #beta = tf.maximum(tf.reduce_mean(y_true), tf.keras.backend.epsilon())
+    beta = 0.5
     y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(), 1 - tf.keras.backend.epsilon())
-    y_pred = K.log(y_pred / (1 - y_pred))
+    y_pred = K.log(y_pred / (1 - y_pred))   # TODO: is this wrong? should it be for y_true? see:https://stackoverflow.com/questions/41455101/what-is-the-meaning-of-the-word-logits-in-tensorflow
+    #y_true = K.log(y_true / (1 - y_true))
     return sigmoid_balanced_cross_entropy_with_logits(logits=y_pred, labels=y_true, beta=beta)
+
+def binary_crossentropy(target, output, from_logits=False):
+    target = tf.convert_to_tensor(target)
+    output = tf.convert_to_tensor(output)
+
+    if from_logits:
+        y_pred = tf.clip_by_value(output, K.epsilon(), 1 - K.epsilon())
+        return sigmoid_balanced_cross_entropy_with_logits(logits=target, labels=K.log(y_pred/(1-y_pred)), beta=beta)
+    
+    epsilon_ = tf.constant(K.epsilon(), output.dtype.base_dtype)
+    output = tf.clip_by_value(output, epsilon_, 1.0 - epsilon_)
+
+    # Compute cross entropy from probabilities.
+    bce = target * tf.math.log(output + K.epsilon())
+    bce += (1 - target) * tf.math.log(1 - output + K.epsilon())
+    #return tf.reduce_mean(-bce)
+    return -bce
+
+def balanced_binary_crossentropy(target, output, from_logits=False):
+    target = tf.convert_to_tensor(target)
+    output = tf.convert_to_tensor(output)
+
+    #beta = 1-K.mean(target)
+    beta = tf.maximum(K.mean(target), K.epsilon())
+
+    if from_logits:
+        y_pred = tf.clip_by_value(output, K.epsilon(), 1 - K.epsilon())
+        return sigmoid_balanced_cross_entropy_with_logits(logits=target, labels=K.log(y_pred/(1-y_pred)), beta=beta)
+    
+    epsilon_ = tf.constant(K.epsilon(), output.dtype.base_dtype)
+    output = tf.clip_by_value(output, epsilon_, 1.0 - epsilon_)
+
+    # Compute cross entropy from probabilities.
+    bce = beta * target * tf.math.log(output + K.epsilon())
+    bce += (1-beta) * (1 - target) * tf.math.log(1 - output + K.epsilon())
+    #return tf.reduce_mean(-bce)
+    return -bce
+
+def binary_crossentropy(target, output, from_logits=False):
+    """Binary crossentropy between an output tensor and a target tensor.
+    Args:
+        target: A tensor with the same shape as `output`.
+        output: A tensor.
+        from_logits: Whether `output` is expected to be a logits tensor. By default, we consider that `output` encodes a probability distribution.
+    Returns:
+        A tensor.
+    """
+    target = tf.convert_to_tensor(target)
+    output = tf.convert_to_tensor(output)
+
+    if from_logits:
+        return tf.nn.sigmoid_cross_entropy_with_logits(labels=target, logits=output)
+    epsilon_ = tf.constant(K.epsilon(), dtype=output.dtype.base_dtype)
+
+    output = tf.clip_by_value(output, epsilon_, 1.0 - epsilon_)
+
+    # Compute cross entropy from probabilities.
+    bce = target * tf.math.log(output + K.epsilon())
+    bce += (1 - target) * tf.math.log(1 - output + K.epsilon())
+    return -bce
 
 
 def tversky_loss(y_true, y_pred, beta=0.7):
@@ -166,9 +274,9 @@ def iou(y_true, y_pred):
     Returns:
         the IoU for the given label
     """
-    intersection = K.sum(K.abs(y_true * y_pred))
+    intersection = K.sum(K.abs(y_true * K.round(K.clip(y_pred, 0, 1))))
     #intersection = K.sum(y_true * y_pred)
-    union = K.sum(y_true) + K.sum(y_pred) - intersection
+    union = K.sum(y_true) + K.sum(K.round(K.clip(y_pred, 0, 1))) - intersection
     # avoid divide by zero - if the union is zero, return 1, otherwise, return the intersection over union
     return K.switch(K.equal(union, 0), 1.0, intersection / union)
 
