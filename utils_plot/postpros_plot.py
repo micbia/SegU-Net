@@ -2,7 +2,9 @@ import numpy as np, matplotlib.pyplot as plt, os
 import matplotlib.ticker as ticker
 from glob import glob
 
-from sys import argv
+import sys
+sys.path.insert(0,'../')
+from config.net_config import NetworkConfig
 
 plt.rcParams['font.size'] = 12
 plt.rcParams['axes.linewidth'] = 1.1
@@ -11,23 +13,25 @@ plt.rcParams['ytick.direction'] = 'in'
 plt.rcParams['xtick.top'] = False
 plt.rcParams['ytick.right'] = True
 
-script, path = argv
+script, path = sys.argv
 os.chdir(path)
 
+config_file = glob('*.ini')[0]
+conf = NetworkConfig(config_file)
+metrics_wanted = conf.METRICS
+metrics_wanted.remove('precision')
+metrics_wanted.remove('balanced_accuracy')
+
 # Load Data
-#name_val_metric = np.sort(glob('val_*.txt')) 
-name_val_metric = glob('val_iou*.txt')
-name_val_metric = np.append(name_val_metric, glob('val_matthews_coef*.txt'))
-name_val_metric = np.append(name_val_metric, glob('val_FalseNegativeRate*'))
-name_val_metric = np.append(name_val_metric, glob('val_FalsePositiveRate*'))
-name_metric = [sf[4:] for sf in name_val_metric] 
-epoch = int(name_metric[0][name_metric[0].rfind('-')+1:name_metric[0].rfind('.')]) 
+epoch = conf.RESUME_EPOCH
+name_val_metric = np.array(['outputs/val_%s_ep-%d.txt' %(nm, epoch) for nm in metrics_wanted])
+name_metric = np.array(['outputs/%s_ep-%d.txt' %(nm, epoch) for nm in metrics_wanted])
+loss, val_loss = np.loadtxt('outputs/loss_ep-%d.txt' %epoch), np.loadtxt('outputs/val_loss_ep-%d.txt' %epoch)
+lr = np.loadtxt('outputs/lr_ep-%d.txt' %epoch)
 
-loss, val_loss = np.loadtxt('loss_ep-%d.txt' %epoch), np.loadtxt('val_loss_ep-%d.txt' %epoch)
-lr = np.loadtxt('lr_ep-%d.txt' %epoch)
+idx_best_mode = conf.BEST_EPOCH-1
 
-idx_best_mode = np.argmin(val_loss)
-print('best loss (epoch = %d / %d):\t%.3e' %(idx_best_mode+1, val_loss.size, val_loss[idx_best_mode]))
+print(' best loss (epoch = %d / %d):\t%.3e' %(idx_best_mode+1, val_loss.size, val_loss[idx_best_mode]))
 
 # Plot
 fig1 = plt.figure(figsize=(16, 6)) 
@@ -56,9 +60,9 @@ ax2.set_ylabel('Accuracy'), ax2.set_xlabel('Epoch')
 for i_nm, (nm, vnm) in enumerate(zip(name_metric, name_val_metric)): 
     if not('loss' in nm):
         metric, val_metric = np.loadtxt(nm), np.loadtxt(vnm)
-        lb = nm[:nm.rfind('_')]
+        print(' %s :\t%.2f%%' %(metrics_wanted[i_nm], 100*val_metric[idx_best_mode]))
         ax2.plot(val_metric, color='tab:'+colours[i_cl], ls='--')
-        ax2.plot(metric, color='dark'+colours[i_cl], label=lb)
+        ax2.plot(metric, color='dark'+colours[i_cl], label=metrics_wanted[i_nm])
         ax2.scatter(idx_best_mode, val_metric[idx_best_mode], marker="x", color="r")
         i_cl += 1
 
@@ -90,5 +94,5 @@ ax4.tick_params(axis='both', length=7, width=1.1)
 ax4.tick_params(which='minor', axis='both', length=3, width=1.1)
 """
 
-plt.savefig('loss.png', bbox_inches='tight')
+plt.savefig('outputs/loss.png', bbox_inches='tight')
 #plt.show()

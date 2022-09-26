@@ -302,7 +302,8 @@ class LightConeGenerator(Sequence):
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         
         #self.random_xHI = random.random()
-        self.random_xHI = round(random.uniform(0., 0.15), 4)        # TODO: change this before recompile
+        #self.random_xHI = round(random.uniform(0.1, 0.25), 4)        # TODO: change this before recompile
+        self.random_xHI = round(random.uniform(0.2, 0.35), 4)
 
         X = np.zeros((np.append(self.batch_size, self.data_shape)))
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
@@ -336,7 +337,6 @@ class LightConeGenerator(Sequence):
                 # read LC
                 #dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
                 dT = self._read_cbin(filename='%sdT4pca_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
-
                 xH = self._read_cbin(filename='%sxH_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
                 #xH = self._read_cbin(filename='%sdT2_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
                 
@@ -358,8 +358,8 @@ class LightConeGenerator(Sequence):
     def _lc_data(self, x, y):
         if(np.min(self.data_shape) == np.max(self.data_shape)):
             # for U-Net on slices
-            #rseed2 = random.randint(0, x.shape[-1]-1)
-            rseed2 = np.argmin(abs(np.mean(y, axis=(0,1)) - self.random_xHI))
+            rseed2 = random.randint(0, x.shape[-1]-1)
+            #rseed2 = np.argmin(abs(np.mean(y, axis=(0,1)) - self.random_xHI))
             
             dT_sampled = x[:, :, rseed2].astype(np.float32)
             xH_sampled = y[:, :, rseed2].astype(np.float32)

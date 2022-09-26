@@ -15,8 +15,8 @@ def Unet(img_shape, params, path='./'):
     if(np.size(img_shape)-1 == 2):
         Conv = Conv2D
         ConvTranspose = Conv2DTranspose
-        Pooling = MaxPooling2D
-        #Pooling = AveragePooling2D
+        #Pooling = MaxPooling2D
+        Pooling = AveragePooling2D
         ps = (2, 2)
     elif(np.size(img_shape)-1 == 3):
         Conv = Conv3D

@@ -12,6 +12,7 @@ from utils.other_utils import get_dir_size
 path_input = sys.argv[1]
 path_input += '/' if path_input[-1] != '/' else ''
 path_out = path_input if sys.argv[2] == 'same' else sys.argv[2]
+path_out += '/' if path_out[-1] != '/' else ''  
 try:
     os.makedirs(path_out)
     os.makedirs(path_out+'data')
@@ -32,6 +33,7 @@ print(' Starting rank %d at: %s' %(rank, datetime.now().strftime('%H:%M:%S')))
 COMPRESS = False
 #RERUN = ['dT3', 'dT4', 'dT4pca', 'dT5', 'dT5pca']
 RERUN = ['dT4pca']
+nr = 4      # componens to remove in PCA
 uvfile = '/store/ska/sk09/segunet/uvmap_128_z7-20.pkl'
 z_min, z_max = 7, 11
 tobs = 1000.
@@ -68,14 +70,13 @@ else:
 # Start loop
 print(' Processors repartition:\n rank %d\t%d\t%d' %(rank, i_start, i_end)) 
 for i in range(i_start, i_end):
-
-    # Define astronomical parameters
-    eff_fact, Rmfp, Tvir, rseed = astro_params[i, 1:]
-    a_params = {'HII_EFF_FACTOR':eff_fact, 'R_BUBBLE_MAX':Rmfp, 'ION_Tvir_MIN':Tvir}
-    print(' Re-run random seed:\t %d' %rseed)
-    
     #if not (os.path.exists(path_out+'data/dT3_21cm_i%d.bin' %i)):
-    if ('dT' in RERUN and not os.path.exists(path_input+'data/dT_21cm_i%d.bin' %i) or 'xHI' in RERUN and not os.path.exists(path_input+'data/xHI_21cm_i%d.bin' %i)):
+    if ('dT' in RERUN and not (os.path.exists(path_input+'data/dT_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/dT_21cm_i%d.bin' %i)) or 'xHI' in RERUN and not (os.path.exists(path_input+'data/xHI_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/xHI_21cm_i%d.bin' %i))):
+        # Define astronomical parameters
+        eff_fact, Rmfp, Tvir, rseed = astro_params[i, 1:]
+        a_params = {'HII_EFF_FACTOR':eff_fact, 'R_BUBBLE_MAX':Rmfp, 'ION_Tvir_MIN':Tvir}
+        print(' Re-run random seed:\t %d' %rseed)
+        
         path_cache = './'
         try:
             os.system('rm %s*h5' %path_cache)
@@ -94,7 +95,7 @@ for i in range(i_start, i_end):
         t2c.save_cbin(path_out+'data/dT_21cm_i%d.bin' %i, dT)
         t2c.save_cbin(path_out+'data/xHI_21cm_i%d.bin' %i, lightcone.xH_box)
     
-    if('dT2' in RERUN and not os.path.exists(path_input+'data/dT2_21cm_i%d.bin' %i)):
+    if('dT2' in RERUN and not (os.path.exists(path_input+'data/dT2_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/dT2_21cm_i%d.bin' %i))):
         dT = t2c.read_cbin(path_input+'data/dT_21cm_i%d.bin' %i)
         dT2, _ = t2c.smooth_lightcone(t2c.subtract_mean_signal(dT, los_axis=2), z_array=redshifts, box_size_mpc=params['BOX_LEN']) 
         t2c.save_cbin(path_out+'data/dT2_21cm_i%d.bin' %i, dT2) # smooth(dT - avrg_dT)
@@ -104,28 +105,28 @@ for i in range(i_start, i_end):
                                         zs=redshifts, 
                                         obs_time=tobs, save_uvmap=uvfile,
                                         boxsize=params['BOX_LEN'], n_jobs=1)
-    if('dT3' in RERUN and not os.path.exists(path_input+'data/dT3_21cm_i%d.bin' %i)):
+    if('dT3' in RERUN and not (os.path.exists(path_input+'data/dT3_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/dT3_21cm_i%d.bin' %i))):
         dT3, _ = t2c.smooth_lightcone(t2c.subtract_mean_signal(dT + lc_noise, los_axis=2), z_array=redshifts, box_size_mpc=params['BOX_LEN']) 
         t2c.save_cbin(path_out+'data/dT3_21cm_i%d.bin' %i, dT3) # smooth(dT + noise - avrg_dT)
-    if('dT4' in RERUN and not os.path.exists(path_input+'data/dT4_21cm_i%d.bin' %i)):
+    if('dT4' in RERUN and not (os.path.exists(path_input+'data/dT4_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/dT4_21cm_i%d.bin' %i))):
         gal_fg = t2c.galactic_synch_fg(z=redshifts, ncells=params['HII_DIM'], boxsize=params['BOX_LEN'], rseed=rseed)
         dT4, _ = t2c.smooth_lightcone(t2c.subtract_mean_signal(dT + lc_noise + gal_fg, los_axis=2), z_array=redshifts, box_size_mpc=params['BOX_LEN'])
         t2c.save_cbin(path_out+'data/dT4_21cm_i%d.bin' %i, dT4) # smooth(dT + noise + gf - avrg_dT)
-    if('dT4pca' in RERUN and not os.path.exists(path_input+'data/dT4pca_21cm_i%d.bin' %i)):
+    if('dT4pca' in RERUN and not (os.path.exists(path_input+'data/dT4pca%s_21cm_i%d.bin' %(str(nr), i)) or os.path.exists(path_out+'data/dT4pca%s_21cm_i%d.bin' %(str(nr), i)))):
         dT4 = t2c.read_cbin(path_input+'data/dT4_21cm_i%d.bin' %i)
         data_flat = np.reshape(dT4, (-1, dT4.shape[2]))
-        pca = sciPCA(n_components=7)
+        pca = sciPCA(n_components=nr)
         datapca = pca.fit_transform(data_flat)
         pca_FG = pca.inverse_transform(datapca)
         dT4pca = np.reshape(data_flat - pca_FG, dT4.shape)
-        t2c.save_cbin(path_out+'data/dT4pca_21cm_i%d.bin' %i, dT4pca)
-    if('dT5' in RERUN and not os.path.exists(path_input+'data/dT5_21cm_i%d.bin' %i)):
+        t2c.save_cbin(path_out+'data/dT4pca%s_21cm_i%d.bin' %(str(nr), i), dT4pca)
+    if('dT5' in RERUN and not (os.path.exists(path_input+'data/dT5_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/dT5_21cm_i%d.bin' %i))):
         gal_fg = t2c.galactic_synch_fg(z=redshifts, ncells=params['HII_DIM'], boxsize=params['BOX_LEN'], rseed=rseed)
         exgal_fg = t2c.extragalactic_pointsource_fg(z=redshifts, ncells=params['HII_DIM'], boxsize=params['BOX_LEN'], rseed=rseed)
         dT5, _ = t2c.smooth_lightcone(t2c.subtract_mean_signal(dT + lc_noise + exgal_fg + gal_fg, los_axis=2), z_array=redshifts, box_size_mpc=params['BOX_LEN'])
         t2c.save_cbin(path_out+'data/dT5_21cm_i%d.bin' %i, dT5)  # smooth(dT + noise + gf + exgf - avrg_dT)
         np.save(path_out+'data/dTexgf_21cm_i%d.npy' %i, exgal_fg[..., 0]) # save just the extragalactic points first slice
-    if('dT5pca' in RERUN and not os.path.exists(path_input+'data/dT5pca_21cm_i%d.bin' %i)):
+    if('dT5pca' in RERUN and not (os.path.exists(path_input+'data/dT5pca_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/dT5pca_21cm_i%d.bin' %i))):
         dT5 = t2c.read_cbin(path_input+'data/dT5_21cm_i%d.bin' %i)
         data_flat = np.reshape(dT5, (-1, dT5.shape[2]))
         pca = sciPCA(n_components=7)
@@ -133,7 +134,7 @@ for i in range(i_start, i_end):
         pca_FG = pca.inverse_transform(datapca)
         dT5pca = np.reshape(data_flat - pca_FG, dT5.shape)
         t2c.save_cbin(path_out+'data/dT5pca_21cm_i%d.bin' %i, dT5pca)
-    if('xH' in RERUN and not os.path.exists(path_input+'data/xH_21cm_i%d.bin' %i)):
+    if('xH' in RERUN and not (os.path.exists(path_input+'data/xH_21cm_i%d.bin' %i) or os.path.exists(path_out+'data/xH_21cm_i%d.bin' %i))):
         xHI = t2c.read_cbin(path_input+'data/xHI_21cm_i%d.bin' %i)
         smt_xn, _ = t2c.smooth_lightcone(xHI, z_array=redshifts, box_size_mpc=params['BOX_LEN']) 
         mask_xH = smt_xn>0.5

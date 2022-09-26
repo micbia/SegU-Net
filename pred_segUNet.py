@@ -22,13 +22,15 @@ PLOT_STATS, PLOT_MEAN, PLOT_VISUAL, PLOT_ERROR, PLOT_SCORE = True, True, True, F
 #PLOT_STATS, PLOT_MEAN, PLOT_VISUAL, PLOT_ERROR, PLOT_SCORE = False, False, False, False, True
 
 #path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_pred_310822/'
-path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_valid_190922/'
+#path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_valid_190922/'
+path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_test_190922/'
 #dataset_size = len(glob(path_pred+'data/dT2*'))
 pred_idx = np.arange(11)
 #pred_idx = np.loadtxt(path_pred+'good_data.txt', dtype=int)
 
 #path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/BT23-09T11-19-42_128slice/'
-path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/testall_23-09T21-05-03_128slice/'
+#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/testall_23-09T21-05-03_128slice/'
+path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/all24-09T23-36-45_128slice/'
 
 #path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/BCE_biastrain21-09T19-29-15_128slice/'
 #path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/16-09T14-15-20_128slice/'
@@ -58,6 +60,7 @@ astro_params = np.loadtxt('%sparameters/astro_params.txt' %path_pred)
 
 # Load best model
 model = LoadSegUnetModel(config_file)
+nr = 4
 
 # Prediction loop
 #for i_pred in tqdm(range(dataset_size)):
@@ -67,7 +70,7 @@ for ii in tqdm(range(pred_idx.size)):
     a_params = {'HII_EFF_FACTOR':zeta, 'R_BUBBLE_MAX':Rmfp, 'ION_Tvir_MIN':Tvir}
 
     # Load input and target
-    x_input = t2c.read_cbin('%sdata/dT4pca_21cm_i%d.bin' %(path_pred, i_pred))
+    x_input = t2c.read_cbin('%sdata/dT4pca%d_21cm_i%d.bin' %(path_pred, nr, i_pred))
     y_true = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(path_pred, i_pred))
 
     # Prediction on dataset

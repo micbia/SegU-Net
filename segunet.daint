@@ -29,10 +29,9 @@ module load TensorFlow/2.4.0-CrayGNU-21.09
 #CONFIG_PATH="$SCRATCH/output_segunet/outputs/21-09T12-47-56_128slice"
 #CONFIG_PATH="$SCRATCH/output_segunet/outputs/BCE_biastrain21-09T19-29-15_128slice"
 
+CONFIG_PATH="$SCRATCH/output_segunet/outputs/all24-09T23-36-45_128slice"
 #CONFIG_PATH="$SCRATCH/output_segunet/outputs/BT23-09T11-19-42_128slice"
-CONFIG_PATH="$SCRATCH/output_segunet/outputs/test23-09T19-45-35_128slice"
-#CONFIG_PATH="$SCRATCH/output_segunet/outputs/testall_23-09T21-05-03_128slice"
-
+#CONFIG_PATH="$SCRATCH/output_segunet/outputs/test23-09T19-45-35_128slice"
 
 source $HOME/venvs/segunet-venv/bin/activate
 #python opt_talos.py $CONFIG_PATH/net_Unet_lc.ini

@@ -49,12 +49,13 @@ path_scratch = '/scratch/snx3000/mibianco/output_segunet/'
 output_prefix = ''
 PATH_OUT, RESUME_MODEL = config_paths(conf=conf, path_scratch=path_scratch, prefix=output_prefix)
 
-# copy code to source directory
-os.system('cp *.py %s/source' %PATH_OUT)
-os.system('cp -r utils %s/source' %PATH_OUT)
-os.system('cp -r utils_network %s/source' %PATH_OUT)
-os.system('cp -r utils_plot %s/source' %PATH_OUT)
-os.system('cp -r config %s/source' %PATH_OUT)
+if not (os.path.exists(PATH_OUT+'source')):
+    # copy code to source directory
+    os.system('cp *.py %s/source' %PATH_OUT)
+    os.system('cp -r utils %s/source' %PATH_OUT)
+    os.system('cp -r utils_network %s/source' %PATH_OUT)
+    os.system('cp -r utils_plot %s/source' %PATH_OUT)
+    os.system('cp -r config %s/source' %PATH_OUT)
 os.system('cp %s %s' %(config_file, PATH_OUT))
 
 # Define GPU distribution strategy
@@ -167,6 +168,7 @@ with strategy.scope():
         
         if(conf.RECOMPILE):
             RESUME_LR = np.loadtxt('%soutputs/lr_ep-%d.txt' %(conf.RESUME_PATH, conf.RESUME_EPOCH))[conf.BEST_EPOCH-1]
+            #RESUME_LR = conf.LR
             model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, metrics=METRICS)
             resume_metrics = model.evaluate(valid_dataset, steps=size_valid_dataset//BATCH_SIZE, verbose=1)
             RESUME_LOSS = resume_metrics[0]

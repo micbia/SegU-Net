@@ -46,7 +46,7 @@ COMPRESS = False
 MAKE_PLOT = False
 
 # Loop parameters
-loop_start, loop_end = 0, 300
+loop_start, loop_end = 0, 10000
 perrank = (loop_end-loop_start)//nprocs
 
 path_cache = '/scratch/snx3000/mibianco/_cache%d/' %rank

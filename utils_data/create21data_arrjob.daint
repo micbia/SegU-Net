@@ -40,8 +40,8 @@ fi
 
 #python run_lc.py $PATH_OUT
 
-PATH_IN='/store/ska/sk09/segunet/inputs/dataLC_128_train_190922/'
-PATH_OUT='/scratch/snx3000/mibianco/test_pca/'
+PATH_IN='/store/ska/sk09/segunet/inputs/dataLC_128_valid_190922'
+PATH_OUT='/scratch/snx3000/mibianco/pca4_valid'
 python create_lightcone_21cmfast_rerun.py $PATH_IN $PATH_OUT
 
 conda deactivate

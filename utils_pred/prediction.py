@@ -111,7 +111,7 @@ def SegUnet2Predict(unet, lc, tta=False):
 
         for iopt in tqdm(range(len(transf_opts))):
             opt, rot = transf_opts['opt%d' %iopt]
-            x_pred = unet.predict(np.rot90(opt(x), k=rot, axes=ax_tup)[...,np.axis], verbose=0)
+            x_pred = unet.predict(np.rot90(opt(x), k=rot, axes=ax_tup)[...,np.newaxis], verbose=0)
             #transform_x = np.moveaxis(np.rot90(opt(x_pred.squeeze()), k=-rot, axes=ax_tup), 0, 2)
             #x_tta[iopt] = np.round(np.clip(transform_x, 0, 1))
             x_tta[iopt] = np.moveaxis(np.rot90(opt(x_pred.squeeze()), k=-rot, axes=ax_tup), 0, 2)
