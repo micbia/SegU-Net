@@ -4,7 +4,7 @@
 #SBATCH --ntasks 10
 #SBATCH --account=sk09
 #SBATCH --time=24:00:00
-#SBATCH --array=0-149
+#SBATCH --array=0-4
 #SBATCH --output=../logs/uv%A.%j.out
 #SBATCH --error=../logs/uv%A.%j.err
 #SBATCH --partition=normal

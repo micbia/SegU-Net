@@ -8,10 +8,10 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.layers import ELU, LeakyReLU, PReLU, ReLU
 
 from config.net_config import NetworkConfig
-from utils_network.networks import Unet, LSTM_Unet, Unet_Reg, ChonkyBoy, ChonkyBoy3
+from utils_network.networks import Unet, SERENEt, FullSERENEt
 from utils_network.metrics import get_avail_metris
 from utils_network.callbacks import HistoryCheckpoint, SaveModelCheckpoint, ReduceLR
-from utils_network.data_generator import LightConeGenerator, LightConeGenerator_Reg, LightConeGenerator_SegRec3 , LightConeGenerator_SegRec
+from utils_network.data_generator import LightConeGenerator, LightConeGenerator_SERENEt, LightConeGenerator_FullSERENEt
 from utils.other_utils import get_data, get_data_lc, config_paths
 from utils_plot.plotting import plot_loss
 
@@ -72,64 +72,69 @@ valid_idx = np.arange(0, size_valid_dataset, dtype=int)
 #valid_idx = np.loadtxt(PATH_VALID+'good_data.txt')
 
 # Create data generator from tensorflow.keras.utils.Sequence
-if(TYPE_NET == 'serene'):
-    train_generator = LightConeGenerator_SegRec3(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
-    valid_generator = LightConeGenerator_SegRec3(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+if(TYPE_NET == 'full_serene'):
+    train_generator = LightConeGenerator_FullSERENEt(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+    valid_generator = LightConeGenerator_FullSERENEt(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
 
     # Define generator functional
     def generator_train():
-        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=True)
-        multi_enqueuer.start(workers=10, max_queue_size=10)
-        while True:
-            batch_xs, batch_ys1, batch_ys2, batch_ys3 = next(multi_enqueuer.get()) 
-            yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_recAstro':batch_ys2, 'out_imgRec':batch_ys3})
-            
-    def generator_valid():
-        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
-        multi_enqueuer.start(workers=10, max_queue_size=10)
-        while True:
-            batch_xs, batch_ys1, batch_ys2, batch_ys3 = next(multi_enqueuer.get()) 
-            yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_recAstro':batch_ys2, 'out_imgRec':batch_ys3})
-
-    # Create dataset from data generator
-    train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, {'out_imgSeg': tf.float32, 'out_recAstro': tf.float32, 'out_imgRec': tf.float32}))
-    valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, {'out_imgSeg': tf.float32, 'out_recAstro': tf.float32, 'out_imgRec': tf.float32}))
-elif(TYPE_NET == 'unet_reg'):
-    train_generator = LightConeGenerator_SegRec(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
-    valid_generator = LightConeGenerator_SegRec(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
-
-    # Define generator functional
-    def generator_train():
-        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=True)
+        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=False)
         multi_enqueuer.start(workers=10, max_queue_size=10)
         while True:
             batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
             yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_imgRec':batch_ys2})
             
     def generator_valid():
-        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
+        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=False)
+        multi_enqueuer.start(workers=10, max_queue_size=10)
+        while True:
+            batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
+            yield (batch_xs, {'seg_out_img':batch_ys1, 'out_imgRec':batch_ys2})
+
+    # Create dataset from data generator
+    train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, {'rec_out_img': tf.float32, 'seg_out_img': tf.float32}))
+    valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, {'rec_out_img': tf.float32, 'seg_out_img': tf.float32}))
+elif(TYPE_NET == 'serene'):
+    train_generator = LightConeGenerator_SERENEt(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+    valid_generator = LightConeGenerator_SERENEt(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, batch_size=BATCH_SIZE, shuffle=True)
+
+    # Define generator functional
+    def generator_train():
+        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=False)
         multi_enqueuer.start(workers=10, max_queue_size=10)
         while True:
             batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
             yield (batch_xs, {'out_imgSeg':batch_ys1, 'out_imgRec':batch_ys2})
+            
+    def generator_valid():
+        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=False)
+        multi_enqueuer.start(workers=10, max_queue_size=10)
+        while True:
+            batch_xs, batch_ys1, batch_ys2 = next(multi_enqueuer.get()) 
+            yield (batch_xs, {'seg_out_img':batch_ys1, 'out_imgRec':batch_ys2})
 
     # Create dataset from data generator
-    train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=(tf.float32, {'out_imgRec': tf.float32, 'out_imgSeg': tf.float32}))
-    valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=(tf.float32, {'out_imgRec': tf.float32, 'out_imgSeg': tf.float32}))
-elif(TYPE_NET == 'unet'):
-    train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
-    valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, tobs=1000, shuffle=True)
+    train_dataset = tf.data.Dataset.from_generator(generator_train, output_types=({'Image1': tf.float32, 'Image2': tf.float32}, {'out_img': tf.float32}))
+    valid_dataset = tf.data.Dataset.from_generator(generator_valid, output_types=({'Image1': tf.float32, 'Image2': tf.float32}, {'out_img': tf.float32}))
+elif(TYPE_NET == 'segunet' or TYPE_NET == 'recunet'):
+    if(TYPE_NET == 'segunet'):
+        DATA_TYPE = 'xH'
+    elif(TYPE_NET == 'recunet'):
+        DATA_TYPE = 'dT2'
+    
+    train_generator = LightConeGenerator(path=PATH_TRAIN, data_temp=train_idx, data_shape=conf.IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, data_type=DATA_TYPE, shuffle=True)
+    valid_generator = LightConeGenerator(path=PATH_VALID, data_temp=valid_idx, data_shape=conf.IM_SHAPE, zipf=ZIPFILE, batch_size=BATCH_SIZE, data_type=DATA_TYPE, shuffle=True)
 
     # Define generator functional
     def generator_train():
-        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=True)
+        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(train_generator, use_multiprocessing=False)
         multi_enqueuer.start(workers=10, max_queue_size=10)
         while True:
             batch_xs, batch_ys = next(multi_enqueuer.get()) 
             yield batch_xs, batch_ys
 
     def generator_valid():
-        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=True)
+        multi_enqueuer = tf.keras.utils.OrderedEnqueuer(valid_generator, use_multiprocessing=False)
         multi_enqueuer.start(workers=10, max_queue_size=10)
         while True:
             batch_xs, batch_ys = next(multi_enqueuer.get()) 
@@ -153,8 +158,7 @@ valid_dataset.with_options(options)
 with strategy.scope():
     if(os.path.exists(RESUME_MODEL)):
         print('Loaded existing model:\n %s' %RESUME_MODEL)
-        ''' NOTE:
-            load_model() is a compiled model ready to be used (unless the saved model was not compiled).
+        ''' NOTE: load_model() is a compiled model ready to be used (unless the saved model was not compiled).
             Therefore re-compiling the model will reset the state of the loaded model. '''
         try:
             custom_metrics = {m:get_avail_metris(m) for m in np.append(conf.LOSS, conf.METRICS)}
@@ -167,10 +171,10 @@ with strategy.scope():
                 l.trainable = False
         
         if(conf.RECOMPILE):
-            RESUME_LR = np.loadtxt('%soutputs/lr_ep-%d.txt' %(conf.RESUME_PATH, conf.RESUME_EPOCH))[conf.BEST_EPOCH-1]
-            #RESUME_LR = conf.LR
+            #RESUME_LR = np.loadtxt('%soutputs/lr_ep-%d.txt' %(conf.RESUME_PATH, conf.RESUME_EPOCH))[conf.BEST_EPOCH-1]
+            RESUME_LR = conf.LR
             model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, metrics=METRICS)
-            resume_metrics = model.evaluate(valid_dataset, steps=size_valid_dataset//BATCH_SIZE, verbose=1)
+            resume_metrics = model.evaluate(valid_dist_dataset, steps=size_valid_dataset//BATCH_SIZE, verbose=1)
             RESUME_LOSS = resume_metrics[0]
             msg = ' Score resumed model:\n'
             for i, res_val in enumerate(resume_metrics):
@@ -182,7 +186,7 @@ with strategy.scope():
             RESUME_LOSS = np.loadtxt('%soutputs/val_loss_ep-%d.txt' %(conf.RESUME_PATH, conf.RESUME_EPOCH))[conf.BEST_EPOCH-1]
             print('\n Loss of resumed model: %.3e\t(%s)' %(RESUME_LOSS, conf.LOSS))
             model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, metrics=METRICS)
-        #model.compile(optimizer=Adam(lr=RESUME_LR), loss=LOSS, loss_weights=[1., 0.], metrics=[METRICS, METRICS])
+
         print(' Resume Learning rate: %.3e' %(tf.keras.backend.get_value(model.optimizer.lr)))
     else: 
         print('\nModel on %d GPU\n' %NR_GPUS)
@@ -195,13 +199,13 @@ with strategy.scope():
                     'depth': 4}
 
         # for Regression image + astropars
-        if(TYPE_NET == 'serene'):
-            model = ChonkyBoy(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
-            model.compile(optimizer=OPTIMIZER, loss=LOSS, loss_weights=LOSS_WEIGHTS, metrics=[METRICS, METRICS])
-        elif(TYPE_NET == 'unet_reg'):
-            model = Unet_Reg(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
-            model.compile(optimizer=OPTIMIZER, loss=[LOSS, LOSS, LOSS], loss_weights=[0.4, 0.2, 0.4], metrics=[METRICS, METRICS, METRICS])
-        elif(TYPE_NET == 'unet'):
+        if(TYPE_NET == 'full_serene'):
+            model = FullSERENEt(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
+            model.compile(optimizer=OPTIMIZER, loss=[LOSS, LOSS], loss_weights=LOSS_WEIGHTS, metrics=[METRICS, METRICS])
+        elif(TYPE_NET == 'serene'):
+            model = SERENEt(img_shape1=np.append(conf.IM_SHAPE, 1), img_shape2=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
+            model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+        elif(TYPE_NET == 'segunet' or TYPE_NET == 'recunet'):
             model = Unet(img_shape=np.append(conf.IM_SHAPE, 1), params=hyperpar, path=PATH_OUT)
             model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
@@ -225,4 +229,4 @@ results = model.fit(x=train_dist_dataset,
 
 # Plot Loss
 #plot_loss(output=results, path=PATH_OUT+'outputs/')
-os.system('python utils_plot/postpros_plot.py %s/outputs/' %PATH_OUT)
+os.system('python utils_plot/postpros_plot.py %s' %PATH_OUT)

@@ -11,36 +11,28 @@ from sklearn.metrics import matthews_corrcoef, r2_score
 from sklearn.metrics import confusion_matrix
 
 from utils_pred.prediction import SegUnet2Predict, LoadSegUnetModel
-from utils_plot.other_utils import adjust_axis
 
 
 title_a = '\t\t _    _ _   _      _   \n\t\t| |  | | \ | |    | |  \n\t\t| |  | |  \| | ___| |_ \n\t\t| |  | | . ` |/ _ \ __|\n\t\t| |__| | |\  |  __/ |_ \n\t\t \____/|_| \_|\___|\__|\n'
 title_b = ' _____              _ _      _         ___  __                \n|  __ \            | (_)    | |       |__ \/_ |               \n| |__) | __ ___  __| |_  ___| |_ ___     ) || | ___ _ __ ___  \n|  ___/ `__/ _ \/ _` | |/ __| __/ __|   / / | |/ __| `_ ` _ \ \n| |   | | |  __/ (_| | | (__| |_\__ \  / /_ | | (__| | | | | |\n|_|   |_|  \___|\__,_|_|\___|\__|___/ |____||_|\___|_| |_| |_|\n'
 print(title_a+'\n'+title_b)
 
-PLOT_STATS, PLOT_MEAN, PLOT_VISUAL, PLOT_ERROR, PLOT_SCORE = True, True, True, False, True
-#PLOT_STATS, PLOT_MEAN, PLOT_VISUAL, PLOT_ERROR, PLOT_SCORE = False, False, False, False, True
+PLOT_STATS, PLOT_MEAN, PLOT_VISUAL, PLOT_ERROR, PLOT_SCORE = True, True, True, True, True
 
 #path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_pred_310822/'
-#path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_valid_190922/'
-path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_test_190922/'
-#dataset_size = len(glob(path_pred+'data/dT2*'))
-pred_idx = np.arange(11)
-#pred_idx = np.loadtxt(path_pred+'good_data.txt', dtype=int)
+#path_pred = '/store/ska/sk09/segunet/inputs/dataLC_128_pred_190922/'
+path_pred = '/store/ska/sk02/lightcones/EOS21/EOS_dataset/'
 
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/BT23-09T11-19-42_128slice/'
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/testall_23-09T21-05-03_128slice/'
-path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/all24-09T23-36-45_128slice/'
+pred_idx = np.arange(64)
+#pred_idx = np.array([10])
 
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/BCE_biastrain21-09T19-29-15_128slice/'
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/16-09T14-15-20_128slice/'
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/17-09T22-53-05_128slice/'
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/19-09T18-59-33_128slice/'
-#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/14-09T13-23-19_128slice/'
 #path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/dT4pca_12-09T16-07-57_128slice/'
 #path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/dT3_12-09T15-23-31_128slice/'
+path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/all24-09T23-36-45_128slice/'
+#path_model = '/scratch/snx3000/mibianco/output_segunet/outputs/BTz24-09T23-36-45_128slice/'
+
 config_file = path_model+'net_Unet_lc.ini'
-path_out = path_model+'prediction/'
+path_out = path_model+'prediction_EOS_nr7/'
 try:
     os.makedirs(path_out)
 except:
@@ -52,7 +44,7 @@ redshift = np.loadtxt('%slc_redshifts.txt' %path_pred)
 # Cosmology and Astrophysical parameters
 with open(path_pred+'parameters/user_params.txt', 'r') as file:
     params = eval(file.read())
-
+    dr_xy = np.linspace(0, params['BOX_LEN'], params['HII_DIM'])
 with open(path_pred+'parameters/cosm_params.txt', 'r') as file:
     c_params = eval(file.read())
 
@@ -63,7 +55,6 @@ model = LoadSegUnetModel(config_file)
 nr = 4
 
 # Prediction loop
-#for i_pred in tqdm(range(dataset_size)):
 for ii in tqdm(range(pred_idx.size)):
     i_pred = pred_idx[ii]
     idx, zeta, Rmfp, Tvir, rseed = astro_params[i_pred]
@@ -72,16 +63,35 @@ for ii in tqdm(range(pred_idx.size)):
     # Load input and target
     x_input = t2c.read_cbin('%sdata/dT4pca%d_21cm_i%d.bin' %(path_pred, nr, i_pred))
     y_true = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(path_pred, i_pred))
+    xHI = t2c.read_cbin('%sdata/xHI_21cm_i%d.bin' %(path_pred, i_pred))
 
     # Prediction on dataset
-    #x_input, _ = t2c.smooth_lightcone(x_input, z_array=redshift, box_size_mpc=params['BOX_LEN'])    # additional smoothing
     y_tta = SegUnet2Predict(unet=model, lc=x_input, tta=PLOT_ERROR)
+
     if(PLOT_ERROR):
-        y_pred = np.round(np.clip(np.mean(y_tta, axis=0), 0, 1))
+        y_tta = SegUnet2Predict(unet=model, lc=x_input, tta=PLOT_ERROR)
+        y_pred = np.round(np.mean(y_tta, axis=0))
         y_error = np.std(y_tta, axis=0)
-        y_tta = np.round(np.clip(y_tta, 0, 1)) 
+        t2c.save_cbin('%spred_dT4pca4_21cm_i%d.bin' %(path_out, i_pred), y_pred)
+        t2c.save_cbin('%serror_dT4pca4_21cm_i%d.bin' %(path_out, i_pred), y_error)
+        #np.save('%sdata/ttaxH_21cm_i%d.npy' %(path_out, i_pred), y_tta)
+        y_tta = np.round(y_tta)
+
+        TP_tta = np.sum(y_tta * y_true[np.newaxis,...], axis=(1,2))
+        TN_tta = np.sum((1-y_tta) * (1-y_true[np.newaxis,...]), axis=(1,2))
+        FP_tta = np.sum(y_tta * (1-y_true[np.newaxis,...]), axis=(1,2))
+        FN_tta = np.sum((1-y_tta) * y_true[np.newaxis,...], axis=(1,2))
+
+        TP_err = np.std(TP_tta, axis=0)
+        TN_err = np.std(TN_tta, axis=0)
+        FP_err = np.std(FP_tta, axis=0)
+        FN_err = np.std(FN_tta, axis=0)
+        mcc_err = np.std((TP_tta*TN_tta - FP_tta*FN_tta) / (np.sqrt((TP_tta+FP_tta)*(TP_tta+FN_tta)*(TN_tta+FP_tta)*(TN_tta+FN_tta)) + tf.keras.backend.epsilon()), axis=0)
+
+        mean_error = np.std(np.mean(y_tta, axis=(1,2)), axis=0)
     else:
         y_pred = np.round(np.clip(y_tta.squeeze(), 0, 1))
+        t2c.save_cbin('%sdata/predxH_21cm_i%d.bin' %(path_pred, i_pred), y_pred)
     assert x_input.shape == y_pred.shape
 
     # Statistical quantities
@@ -90,10 +100,7 @@ for ii in tqdm(range(pred_idx.size)):
     FP = np.sum(y_pred * (1-y_true), axis=(0,1))
     FN = np.sum((1-y_pred) * y_true, axis=(0,1))
     #TN, FP, FN, TP = confusion_matrix(y_true[..., 0], y_pred[..., 0]).ravel()
-    #assert TP+TN+FP+FN == params['HII_DIM']*params['HII_DIM']
-    #assert FP+TN == np.sum(1-y_true, axis=(0,1))
-    #assert TP+FP == np.sum(y_true, axis=(0,1))
-    
+
     FNR = FN/(FN+TP)
     FPR = FP/(FP+TN)
     TNR = TN/(FP+TN)   # a.k.a specificy
@@ -104,7 +111,11 @@ for ii in tqdm(range(pred_idx.size)):
     mcc = (TP*TN - FP*FN) / (np.sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)) + tf.keras.backend.epsilon())
     mean_pred = np.mean(y_pred, axis=(0,1))
     mean_true = np.mean(y_true, axis=(0,1))
-    np.savetxt('%sstats_i%d.txt' %(path_out, i_pred), np.array([redshift, acc, TPR, TNR, iou, mcc, mean_pred, mean_true]).T, fmt='%.3f\t'+('%.3e\t'*7)[:-1], header='eff_fact=%.4f\tRmfp=%.4f\tTvir=%.4e\t\nz\tacc\t\tprec\t\tspec\t\tiou\t\tmcc\t\tx_pred\t\ty_true' %(zeta, Rmfp, Tvir))
+    mean_xHI = np.mean(xHI, axis=(0,1))
+    if(PLOT_ERROR):
+        np.savetxt('%sstats_i%d.txt' %(path_out, i_pred), np.array([redshift, acc, TPR, TNR, iou, mcc, mcc_err, mean_pred, mean_error, mean_true]).T, fmt='%.3f\t'+('%.3e\t'*9)[:-1], header='eff_fact=%.4f\tRmfp=%.4f\tTvir=%.4e\t\nz\tacc\t\tprec\t\tspec\t\tiou\t\tmcc\t\terr_mcc\t\tx_pred\t\terr_x_pred\t\ty_true' %(zeta, Rmfp, Tvir))
+    else:
+        np.savetxt('%sstats_i%d.txt' %(path_out, i_pred), np.array([redshift, acc, TPR, TNR, iou, mcc, mean_pred, mean_true]).T, fmt='%.3f\t'+('%.3e\t'*7)[:-1], header='eff_fact=%.4f\tRmfp=%.4f\tTvir=%.4e\t\nz\tacc\t\tprec\t\tspec\t\tiou\t\tmcc\t\tx_pred\t\ty_true' %(zeta, Rmfp, Tvir))
 
     xHI_plot = np.arange(0.1, 1., 0.1)
     redshift_plot = np.array([redshift[np.argmin(abs(mean_true - meanHI))] for meanHI in xHI_plot])
@@ -116,6 +127,10 @@ for ii in tqdm(range(pred_idx.size)):
         plt.rcParams['ytick.direction'] = 'in'
         plt.rcParams['font.size'] = 16
         plt.plot(redshift, mcc, '-', label='PhiCoef')
+        if(PLOT_ERROR):
+            mcc_error_low = np.clip(mcc-mcc_err, 0, (mcc-mcc_err).max())
+            mcc_error_up = np.clip(mcc_err+mcc, (mcc_err+mcc).min(), 1)
+            plt.fill_between(redshift, mcc_error_low, mcc_error_up, color='lightblue', alpha=0.8)
         plt.vlines(redshift_plot, ymin=0, ymax=1, color='black', ls='--')
         plt.xlabel('z'), plt.ylabel(r'$r_{\phi}$')
         plt.ylim(0, 1)
@@ -167,13 +182,17 @@ for ii in tqdm(range(pred_idx.size)):
         ax0 = plt.subplot(gs[0])
         ax0.plot(redshift, mean_pred, ls='-', color='tab:orange', label='Prediction', lw=1.5)
         ax0.plot(redshift, mean_true, ls='-', color='tab:blue', label='True', lw=1.5)
-        #ax0.fill_between(z_mean, avrgR_mean_under/b*a, avrgR_mean_over/b*a, color='lightcoral', alpha=0.2)
-        ax0.legend()
+        if(PLOT_ERROR):
+            mean_error_low = np.clip(mean_pred-mean_error, 0, (mean_pred-mean_error).max())
+            mean_error_up = np.clip(mean_error+mean_pred, (mean_error+mean_pred).min(), 1)
+            ax0.fill_between(redshift, mean_error_low, mean_error_up, color='lightcoral', alpha=0.2)
+        ax0.set_ylim(-0.01, 1.01)
+        ax0.legend(loc=4)
         ax0.set_ylabel(r'$x_{HI}$')
 
         # plot relative difference
         ax1 = plt.subplot(gs[1], sharex = ax0)
-        perc_diff = mean_true/mean_pred-1
+        perc_diff = 100*(1-(mean_true + 1)/(mean_pred + 1))   # here is basically rescaling from 1 to 2 to avoid explosion of the numertor
         ax1.plot(redshift, perc_diff, 'k-', lw=1.5)
         ax1.set_ylabel('difference (%)')
         ax1.set_xlabel('$z$')
@@ -201,36 +220,30 @@ for ii in tqdm(range(pred_idx.size)):
         # FIRST LC PLOT
         ax0 = fig.add_subplot(gs[0,0])
         #ax0.set_title('$r_{\phi}=%.3f$ $t_{obs}=%d\,h$' %(mcc[i_slice], 1000), fontsize=20)
-        im = ax0.imshow(x_input[:,i_lc,:], cmap='jet', aspect='auto', origin='lower')
+        im = ax0.pcolormesh(redshift, dr_xy, x_input[:,i_lc,:], cmap='jet')
         ax0.contour(y_true[:,i_lc,:])
-        adjust_axis(varr=redshift, xy='x', axis=ax0, to_round=1, step=0.25)
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='y', axis=ax0, to_round=params['BOX_LEN'], step=50)
         ax0.set_ylabel('y [Mpc]', size=20)
         ax0.set_xlabel('z', size=20)
 
         # FIRST SLICE PLOT
         ax01 = fig.add_subplot(gs[0,1])
         ax01.set_title(r'$z$ = %.3f   $x_{HI}=%.2f$' %(redshift[i_slice], mean_true[i_slice]), fontsize=20)
-        ax01.imshow(x_input[...,i_slice], cmap='jet', origin='lower')
+        ax01.pcolormesh(dr_xy, dr_xy, x_input[...,i_slice], cmap='jet')
         ax01.contour(y_true[...,i_slice])
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='xy', axis=ax01, to_round=params['BOX_LEN'], step=50)
         #fig.colorbar(im, label=r'$\delta T_b$ [mK]', ax=ax01, pad=0.01, fraction=0.048)
 
         # SECOND LC PLOT
         ax1 = fig.add_subplot(gs[1,0])
-        ax1.imshow(y_pred[:,i_lc,:]  , cmap='jet', aspect='auto', origin='lower', vmin=y_pred.min(), vmax=y_pred.max())
+        ax1.pcolormesh(redshift, dr_xy, y_pred[:,i_lc,:]  , cmap='jet', vmin=y_pred.min(), vmax=y_pred.max())
         ax1.contour(y_true[:,i_lc,:])
-        adjust_axis(varr=redshift, xy='x', axis=ax1, to_round=1, step=0.25)
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='y', axis=ax1, to_round=params['BOX_LEN'], step=50)
         ax1.set_ylabel('y [Mpc]', size=20)
         ax1.set_xlabel('z', size=20)
 
         # SECOND SLICE PLOT
         ax11 = fig.add_subplot(gs[1,1])
         ax11.set_title(r'$r_{\phi}$ = %.3f' %(mcc[i_slice]), fontsize=20)
-        im = ax11.imshow(y_pred[...,i_slice], cmap='jet', origin='lower', vmin=y_pred.min(), vmax=y_pred.max())
+        im = ax11.pcolormesh(dr_xy, dr_xy, y_pred[...,i_slice], cmap='jet', vmin=y_pred.min(), vmax=y_pred.max())
         ax11.contour(y_true[...,i_slice])
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='xy', axis=ax11, to_round=params['BOX_LEN'], step=50)
 
         for ax in [ax01, ax11]:
             ax.set_ylabel('y [Mpc]', size=20)
@@ -257,26 +270,21 @@ for ii in tqdm(range(pred_idx.size)):
         # FIRST LC PLOT
         ax0 = fig.add_subplot(gs[0,0])
         #ax0.set_title('$r_{\phi}=%.3f$ $t_{obs}=%d\,h$' %(mcc[i_slice], 1000), fontsize=20)
-        ax0.imshow(y_pred[:,i_lc,:], cmap='jet', aspect='auto', origin='lower')
+        ax0.pcolormesh(redshift, dr_xy, y_pred[:,i_lc,:], cmap='jet')
         ax0.contour(y_true[:,i_lc,:])
-        adjust_axis(varr=redshift, xy='x', axis=ax0, to_round=1, step=0.25)
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='y', axis=ax0, to_round=params['BOX_LEN'], step=50)
         ax0.set_ylabel('y [Mpc]', size=20)
         ax0.set_xlabel('z', size=20)
 
         # FIRST SLICE PLOT
         ax01 = fig.add_subplot(gs[0,1])
         ax01.set_title(r'$z$ = %.3f   $x_{HI}=%.2f$' %(redshift[i_slice], mean_true[i_slice]), fontsize=20)
-        im = ax01.imshow(y_pred[...,i_slice], cmap='jet', origin='lower')
+        im = ax01.pcolormesh(dr_xy, dr_xy, y_pred[...,i_slice], cmap='jet')
         ax01.contour(y_true[...,i_slice])
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='xy', axis=ax01, to_round=params['BOX_LEN'], step=50)
 
         # SECOND LC PLOT
         ax1 = fig.add_subplot(gs[1,0])
-        im = ax1.imshow(y_error[:,i_lc,:]  , cmap='jet', aspect='auto', origin='lower', vmin=y_error.min(), vmax=y_error.max())
+        im = ax1.pcolormesh(redshift, dr_xy, y_error[:,i_lc,:]  , cmap='jet', vmin=y_error.min(), vmax=y_error.max())
         ax1.contour(y_true[:,i_lc,:])
-        adjust_axis(varr=redshift, xy='x', axis=ax1, to_round=1, step=0.25)
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='y', axis=ax1, to_round=params['BOX_LEN'], step=50)
         fig.colorbar(im, label=r'$\sigma_{std}$', ax=ax1, pad=0.01, fraction=0.048)
         ax1.set_ylabel('y [Mpc]', size=20)
         ax1.set_xlabel('z', size=20)
@@ -284,9 +292,8 @@ for ii in tqdm(range(pred_idx.size)):
         # SECOND SLICE PLOT
         ax11 = fig.add_subplot(gs[1,1])
         ax11.set_title(r'$r_{\phi}$ = %.3f' %(mcc[i_slice]), fontsize=20)
-        im = ax11.imshow(y_error[...,i_slice], cmap='jet', origin='lower', vmin=y_error.min(), vmax=y_error.max())
+        im = ax11.pcolormesh(dr_xy, dr_xy, y_error[...,i_slice], cmap='jet', vmin=y_error[...,i_slice].min(), vmax=y_error[...,i_slice].max())
         ax11.contour(y_true[...,i_slice])
-        adjust_axis(varr=np.linspace(0, params['BOX_LEN'], params['HII_DIM']), xy='xy', axis=ax11, to_round=params['BOX_LEN'], step=50)
         fig.colorbar(im, label=r'$\sigma_{std}$', ax=ax11, pad=0.01, fraction=0.048)
 
         for ax in [ax01, ax11]:
@@ -297,7 +304,6 @@ for ii in tqdm(range(pred_idx.size)):
         plt.savefig('%serror_i%d.png' %(path_out, i_pred), bbox_inches='tight')
 
     if(PLOT_SCORE):
-        #if(i_pred == 0):
         if(ii == 0):
             fig1, ax_s = plt.subplots(figsize=(10,8), ncols=1)
 
@@ -308,23 +314,20 @@ for ii in tqdm(range(pred_idx.size)):
         mapper = matplotlib.cm.ScalarMappable(norm=norm, cmap=cm)
         redshift_color = np.array([(mapper.to_rgba(v)) for v in redshift])
 
-        #for x, y, e, clr, red in zip(mean_true, mcc, mcc_err, redshift_color, redshift):
-        #    ax0.errorbar(x, y, e, lw=1, marker='o', capsize=3, color=clr)
-        
-        for x, y, clr, red in zip(mean_true, mcc, redshift_color, redshift):
-            ax_s.scatter(x, y, lw=1, marker='o', color=clr)
-        
+        #if(PLOT_ERROR):
+        #    for x, y, e, clr, red in zip(mean_true, mcc, mcc_err, redshift_color, redshift):
+        #        ax_s.errorbar(x=x, y=y, yerr=e, lw=1, marker='o', capsize=1, color=clr)
+
         ax_s.set_xlim(mean_true.min()-0.02, mean_true.max()+0.02), ax_s.set_xlabel(r'$\rm x^v_{HI}$', size=20)
         ax_s.set_ylim(-0.02, 1.02), ax_s.set_ylabel(r'$\rm r_{\phi}$', size=20)
         ax_s.set_yticks(np.arange(0, 1.1, 0.1))
         ax_s.set_xticks(np.arange(0, 1.1, 0.2))
-        #ax_s.hlines(y=np.mean(mcc), xmin=-0.02, xmax=1.1, ls='--', alpha=0.8, color='tab:blue', zorder=3)
-        #if(i_pred == 0):
-        if(ii == 0):
+        ax_s.hlines(y=np.mean(mcc), xmin=-0.02, xmax=1.1, ls='--', label=r'$r_{\phi}$ = %.3f' %(np.mean(mcc)), alpha=0.8, color='tab:blue', zorder=3)
+        plt.legend(loc=1)
+        if(ii == pred_idx.size-1):
             fig1.colorbar(sc, ax=ax_s, pad=0.01, label=r'$\rm z$')
-
-if(PLOT_SCORE):
-    fig1.savefig('%smcc_dataset.png' %path_out, bbox_inches='tight')
+            fig1.savefig('%smcc_dataset.png' %path_out, bbox_inches='tight')
+            plt.clf()
 
 print('... done.')
 

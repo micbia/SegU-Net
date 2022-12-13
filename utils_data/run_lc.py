@@ -9,6 +9,21 @@ from sklearn.decomposition import PCA as sciPCA
 
 path_out = sys.argv[1]
 path_out += '/' if path_out[-1]!='/' else ''
+
+print(' Starting at: %s' %(datetime.now().strftime('%H:%M:%S')))
+
+"""
+coeval_cubes = p2c.run_coeval(
+    redshift = 9.0,
+    user_params = {"HII_DIM": 300, "BOX_LEN": 600, "USE_INTERPOLATION_TABLES": True, 'N_THREADS': 8},
+    cosmo_params = p2c.CosmoParams(SIGMA_8=0.8),
+    astro_params = p2c.AstroParams({"HII_EFF_FACTOR":20.0}),
+    random_seed=12345)
+
+#coeval_cubes[0].brightness_temp_struct.save('%sbox_z9_zeta20.00_tvir5.00_rmfp15.00_21cmFast_brightness_temp_600cMpc.h5' %(path_out))
+np.save('%sbox_z9_zeta20.00_tvir5.00_rmfp15.00_21cmFast_brightness_temp_600cMpc.npy' %(path_out), coeval_cubes.brightness_temp)
+
+"""
 try:
     os.makedirs(path_out)
     os.makedirs(path_out+'data')
@@ -23,11 +38,12 @@ name_of_the_run = path_out[path_out[:-1].rfind('/')+1:-1]
 os.chdir(path_out+'..')
 cwd = os.getcwd()
 
-print(' Starting at: %s' %(datetime.now().strftime('%H:%M:%S')))
 
 # 21cmFAST parameters
 #uvfile = '/store/ska/sk09/segunet/uvmap_128_z7-20.pkl'
-uvfile = '/store/ska/sk09/segunet/uvmap_200_z7-35.pkl'
+#uvfile = '/store/ska/sk09/segunet/uvmap_200_z7-35.pkl'
+uvfile = '/store/ska/sk02/lightcones/EOS21/uvmap_1000_z7-10.pkl'
+
 #params = {'HII_DIM':128, 'DIM':512, 'BOX_LEN':256}
 params = {'HII_DIM':200, 'DIM':600, 'BOX_LEN':300, 'USE_INTERPOLATION_TABLES': False}
 c_params = {'OMm':0.27, 'OMb':0.046, 'SIGMA_8':0.82, 'POWER_INDEX':0.96}
@@ -71,7 +87,6 @@ dT = lightcone.brightness_temp
 t2c.save_cbin(path_out+'data/xHI_21cm_i%d.bin' %i, lightcone.xH_box)
 t2c.save_cbin(path_out+'data/dT_21cm_i%d.bin' %i, dT)
 
-"""
 lc_noise = t2c.noise_lightcone(ncells=lightcone.brightness_temp.shape[0], 
                                 zs=lightcone.lightcone_redshifts, 
                                 obs_time=tobs, save_uvmap=uvfile, 
@@ -108,7 +123,6 @@ t2c.save_cbin(path_out+'data/dT4_21cm_i%d.bin' %i, dT4) # smooth(dT + noise + gf
 t2c.save_cbin(path_out+'data/dT5_21cm_i%d.bin' %i, dT5)  # smooth(dT + noise + gf + exgf - avrg_dT)
 np.save(path_out+'data/dTexgf_21cm_i%d.npy' %i, exgal_fg[..., 0]) # just the point sourcess
 t2c.save_cbin(path_out+'data/dT5pca_21cm_i%d.bin' %i, dT5pca)
-"""
 
 # save parameters values
 with open('%sastro_params.txt' %(path_out+'parameters/'), 'a') as f:

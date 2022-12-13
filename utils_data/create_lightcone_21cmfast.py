@@ -1,3 +1,4 @@
+import ast
 import numpy as np, random, os, sys, json, tarfile
 import tools21cm as t2c, py21cmfast as p2c 
 
@@ -35,10 +36,11 @@ print(' Starting rank %d at: %s' %(rank, datetime.now().strftime('%H:%M:%S')))
 
 # 21cmFAST parameters
 c_params = {'OMm':0.27, 'OMb':0.046, 'SIGMA_8':0.82, 'POWER_INDEX':0.96}
-uvfile = '/store/ska/sk09/segunet/uvmap_128_z7-20.pkl'
-params = {'HII_DIM':128, 'DIM':512, 'BOX_LEN':256}
+#uvfile = '/store/ska/sk09/segunet/uvmap_128_z7-20.pkl'
+#params = {'HII_DIM':128, 'DIM':512, 'BOX_LEN':256}
 z_min, z_max = 7.000, 11.000
-#uvfile = '/store/ska/sk09/segunet/uvmap_200_z5-35.pkl'
+uvfile = '/store/ska/sk09/segunet/uvmap_200_z5-35.pkl'
+params = {'HII_DIM':200, 'DIM':600, 'BOX_LEN':300}
 #params = {'HII_DIM':200, 'DIM':600, 'BOX_LEN':300, 'USE_INTERPOLATION_TABLES': False}
 #z_min, z_max = 5.000, 29.999
 tobs = 1000.
@@ -46,7 +48,7 @@ COMPRESS = False
 MAKE_PLOT = False
 
 # Loop parameters
-loop_start, loop_end = 0, 10000
+loop_start, loop_end = 0, 1500
 perrank = (loop_end-loop_start)//nprocs
 
 path_cache = '/scratch/snx3000/mibianco/_cache%d/' %rank
@@ -79,16 +81,21 @@ if(rank != nprocs-1):
 else:
     i_end = loop_end
 
+#astro_params = np.loadtxt('/store/ska/sk09/segunet/inputs/dataLC_128_valid_190922/parameters/astro_params.txt')
 
 # Start loop
 print(' Processors repartition:\n rank %d\t%d\t%d' %(rank, i, i_end)) 
 while i < i_end:
     rseed = GenerateSeed()
+    #rseed = astro_params[i, -1].astype(int)
     print(' generated seed:\t %d' %rseed)
 
     random.seed(rseed)
     eff_fact, Rmfp, Tvir = random.gauss(82., 18.), random.gauss(17.5, 4.5), random.gauss(4.7, 0.2)
-
+    #space = Space([(38.0, 42.), (100., 1500.)]) 
+    #lhs_sampling = np.array(Lhs(criterion="maximin", iterations=10000).generate(dimensions=space.dimensions, n_samples=1, random_state=rseed))
+    #LX, E0 = lhs_sampling[0]
+    
     # Latin Hypercube Sampling of parameters
     #space = Space([(10., 100.), (5., 20.), (np.log10(1e4), np.log10(2e5)), (38.0, 42.), (100., 1500.)]) 
     #space = Space([(10., 250.), (5., 20.), (4., 6.), (38.0, 42.), (100., 1500.)]) 
@@ -109,14 +116,14 @@ while i < i_end:
     lightcone = p2c.run_lightcone(redshift=z_min, max_redshift=z_max, 
                                   user_params=params, astro_params=a_params, cosmo_params=c_params, 
                                   lightcone_quantities=("brightness_temp", 'xH_box'), 
-                                  #flag_options={"USE_TS_FLUCT": True},
+                                  flag_options={"USE_TS_FLUCT": True},
                                   global_quantities=("brightness_temp", 'xH_box'), 
                                   direc=path_cache, random_seed=rseed) 
     
     np.savetxt('%slc_redshifts.txt' %(path_out), lightcone.lightcone_redshifts, fmt='%.5f')
     
     xHI = lightcone.xH_box
-    if((np.mean(xHI[...,0]) <= 0.1) * (np.mean(xHI[...,-1]) >= 0.9)):
+    if((np.mean(xHI[...,0]) <= 0.01) * (np.mean(xHI[...,-1]) >= 0.9)):
         lc_noise = t2c.noise_lightcone(ncells=lightcone.brightness_temp.shape[0], 
                                     zs=lightcone.lightcone_redshifts, 
                                     obs_time=tobs, save_uvmap=uvfile, 

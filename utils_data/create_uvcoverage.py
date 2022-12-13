@@ -9,11 +9,12 @@ antconf = None
 
 #params = {'HII_DIM':128, 'DIM':384, 'BOX_LEN':256}
 #params = {'HII_DIM':256, 'DIM':756, 'BOX_LEN':512}
-params = {'HII_DIM':200, 'DIM':600, 'BOX_LEN':300}
+params = {'HII_DIM':166, 'BOX_LEN':244./0.7}
 #redshift = np.arange(7.001, 12.001, 0.001)
 #redshift = np.arange(7.000, 30.005, 0.001)
 #redshift = np.arange(30.006, 35.100, 0.001)
-redshift = np.arange(5., 7.000, 0.001)
+#redshift = np.arange(5., 7.000, 0.001)
+redshift = np.loadtxt('/store/ska/sk02/lightcones/244Mpc_f2_8.2pS_500to166/redshift_244Mpc166_EoR.txt')
 
 # multiprocessor variables
 rank = int(os.environ['SLURM_ARRAY_TASK_ID'])
