@@ -1,27 +1,25 @@
 #!/bin/sh
 #SBATCH --job-name=uv
-#SBATCH --nodes 1
-#SBATCH --ntasks 10
 #SBATCH --account=sk09
+#SBATCH --nodes=4
+#SBATCH --ntasks-per-node=12
+#SBATCH --output=../logs/uv%j.out
+#SBATCH --error=../logs/uv%j.err
 #SBATCH --time=24:00:00
-#SBATCH --array=0-4
-#SBATCH --output=../logs/uv%A.%j.out
-#SBATCH --error=../logs/uv%A.%j.err
-#SBATCH --partition=normal
-#SBATCH -C gpu
+#SBATCH --constraint=gpu
+##SBATCH --mem 64G
 
-#SBATCH --mail-type=END
+#SBATCH --mail-type=ALL
 #SBATCH --mail-user=michele.bianco@epfl.ch
 
 module load daint-gpu
 module load gcc/9.3.0
 module load cudatoolkit/10.2.89_3.28-2.1__g52c0314
+module load TensorFlow/2.4.0-CrayGNU-21.09
 
 #export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-#source $HOME/venvs/segunet-venv/bin/activate
 source $HOME/miniconda3/etc/profile.d/conda.sh
 conda activate py21cmenv
-python create_uvcoverage.py
+srun -n ${SLURM_NTASKS} python create_uvcoverage_mpi.py
 conda deactivate
-#deactivate

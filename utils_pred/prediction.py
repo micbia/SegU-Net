@@ -117,4 +117,5 @@ def SegUnet2Predict(unet, lc, tta=False):
     else:
         x_tta = unet.predict(x[...,np.newaxis], verbose=0)
         x_tta = np.moveaxis(x_tta.squeeze(), 0, 2)
-    return np.clip(x_tta, 0, 1)
+    #return np.clip(x_tta, 0, 1)
+    return x_tta

@@ -1,22 +1,25 @@
 #!/bin/sh
 #SBATCH --job-name=run
-#SBATCH --nodes 1
-#SBATCH --ntasks-per-node 1
+#SBATCH --nodes=1
+##SBATCH --ntasks-per-node=1
+#SBATCH --account=sk09
+#SBATCH --time=02:00:00
+#SBATCH --output=../logs/run%j.out
+#SBATCH --error=../logs/run%j.err
+#SBATCH -C gpu
+##SBATCH --mem 16G
+##SBATCH -c 8
 
-#SBATCH --exclusive
-#SBATCH --account=dp004
-#SBATCH --partition=cosma6
-#SBATCH --time=01:00:00
-
-#SBATCH --output=../logs/run.%j.out
-#SBATCH --error=../logs/run.%j.err
-#SBATCH --mail-type=END
-#SBATCH --mail-user=mb756@sussex.ac.uk
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=michele.bianco@epfl.ch
 
 module purge
+module load daint-gpu
+module load gcc/9.3.0
+module load cudatoolkit/10.2.89_3.28-2.1__g52c0314
 
-# This adds various useful things to your PATH
-module load utils
-module unload python/2.7.15
-
-python content_tar.py
+# export conda on shell
+source $HOME/miniconda3/etc/profile.d/conda.sh
+conda activate py21cmenv
+python lc_adapt.py
+conda deactivate

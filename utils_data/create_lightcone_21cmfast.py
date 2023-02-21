@@ -35,7 +35,8 @@ nprocs = int(os.environ['SLURM_ARRAY_TASK_COUNT'])
 print(' Starting rank %d at: %s' %(rank, datetime.now().strftime('%H:%M:%S')))
 
 # 21cmFAST parameters
-c_params = {'OMm':0.27, 'OMb':0.046, 'SIGMA_8':0.82, 'POWER_INDEX':0.96}
+#c_params = {'OMm':0.27, 'OMb':0.046, 'SIGMA_8':0.82, 'POWER_INDEX':0.96}
+c_params = {'OMm':(0.02242 + 0.11933)/0.6766**2, 'OMb':0.02242/0.6766**2, 'SIGMA_8':0.8102, 'POWER_INDEX':0.9665}
 #uvfile = '/store/ska/sk09/segunet/uvmap_128_z7-20.pkl'
 #params = {'HII_DIM':128, 'DIM':512, 'BOX_LEN':256}
 z_min, z_max = 7.000, 11.000
@@ -48,7 +49,7 @@ COMPRESS = False
 MAKE_PLOT = False
 
 # Loop parameters
-loop_start, loop_end = 0, 1500
+loop_start, loop_end = 0, 10000
 perrank = (loop_end-loop_start)//nprocs
 
 path_cache = '/scratch/snx3000/mibianco/_cache%d/' %rank

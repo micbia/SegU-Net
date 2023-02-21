@@ -3,54 +3,16 @@ import matplotlib.gridspec as gridspec
 import tools21cm as t2c
 from matplotlib import colors
 
+from other_utils import MidpointNormalize
+
 import sys
-sys.path.append('/jmain02/home/J2AD005/jck02/mxb47-jck02/SegU-Net')
-from utils_network.data_generator import LightConeGenerator_SegRec
-
-class MidpointNormalize(colors.Normalize):
-    """
-    Created by Joe Kington.
-    Normalise the colorbar so that diverging bars work there way either side from a prescribed midpoint value)
-    e.g. im=ax1.imshow(array, norm=MidpointNormalize(midpoint=0.,vmin=-100, vmax=100))
-    """
-    # set the colormap and centre the colorbar
-    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
-        self.midpoint = midpoint
-        colors.Normalize.__init__(self, vmin, vmax, clip)
-
-    def __call__(self, value, clip=None):
-        # I'm ignoring masked values and all kinds of edge cases to make a simple example...
-        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
-        return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
-
-class adjust_axis:
-    def __init__(self, axis, varr, xy, to_round=10, step=5, fmt=int):
-        self.axis = axis
-        self.varr = varr
-        self.to_round = to_round
-        self.step = step
-        self.fmt = fmt
-        
-        loc_f = self.get_axis_locs()
-        if(xy == 'x'):
-            plt.xticks(loc_f)
-            axis.set_xticklabels([int(round(varr[i_n])) for i_n in loc_f])
-        elif(xy == 'y'):
-            plt.yticks(loc_f)
-            axis.set_yticklabels([int(round(varr[i_n])) for i_n in loc_f])
-        
-    def get_axis_locs(self):    
-        v_max = int(round(self.varr.max()/self.to_round)*self.to_round) if int(round(self.varr.max()/self.to_round)*self.to_round) <= self.varr.max() else int(round(self.varr.max()/self.to_round)*self.to_round)-self.to_round
-        v_min = int(round(self.varr.min()/self.to_round)*self.to_round) if int(round(self.varr.min()/self.to_round)*self.to_round) >= self.varr.min() else int(round(self.varr.min()/self.to_round)*self.to_round)+self.to_round
-        v_plot = np.arange(v_min, v_max+self.step, self.step)
-        loc_v = np.array([np.argmin(abs(self.varr-v_plot[i])) for i in range(v_plot.size)]).astype(self.fmt)
-        return loc_v
-
+sys.path.append('../')
+from utils_network.data_generator import LightConeGenerator, LightConeGenerator_SERENEt, LightConeGenerator_FullSERENEt
 
 path_input = '/jmain02/home/J2AD005/jck02/mxb47-jck02/data/inputs/dataLC_128_train_060921_untar/'
 redshifts = np.loadtxt(path_input+'lc_redshifts.txt')
 
-dg = LightConeGenerator_SegRec(path=path_input, data_temp=np.arange(4), data_shape=(128, 128), batch_size=2, shuffle=True)
+dg = LightConeGenerator(path=path_input, data_temp=np.arange(64), data_shape=(128, 128), batch_size=2, shuffle=True)
 data = dg.__getitem__(0)
 dT2 = data[0]
 mask_xn = data[1]

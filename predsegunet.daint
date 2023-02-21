@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --job-name=segunet
+#SBATCH --job-name=pred_segunet
 #SBATCH --account=sk09
 #SBATCH --nodes=1
 ##SBATCH --ntasks-per-node=1
@@ -7,34 +7,28 @@
 #SBATCH --gres=gpu:1
 
 #SBATCH --time=24:00:00
+##SBATCH --time=01:00:00
+##SBATCH --time=00:35:00
+
 #SBATCH --output=logs/segunet.%j.out
 #SBATCH --error=logs/segunet.%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=michele.bianco@epfl.ch
-#SBATCH --mem 60G
+##SBATCH --mem=120G
 
 module load daint-gpu
 module load gcc/9.3.0
 module load cudatoolkit/10.2.89_3.28-2.1__g52c0314
 module load TensorFlow/2.4.0-CrayGNU-21.09
 
-source $HOME/venvs/segunet-venv/bin/activate
+#CONFIG_PATH="$HOME/codes/SegU-Net/config"
 #CONFIG_PATH="$SCRATCH/output_segunet/outputs/dT3_12-09T15-23-31_128slice"
 #CONFIG_PATH="$SCRATCH/output_segunet/outputs/dT4pca_12-09T16-07-57_128slice"
-#CONFIG_PATH="$SCRATCH/output_segunet/outputs/16-09T14-15-20_128slice"
-#CONFIG_PATH="$SCRATCH/output_segunet/outputs/17-09T22-53-05_128slice"
-#CONFIG_PATH="$SCRATCH/output_segunet/outputs/19-09T18-59-33_128slice"
 
-#CONFIG_PATH="$SCRATCH/output_segunet/outputs/21-09T12-28-22_128slice"
-#python utils_plot/postpros_plot.py "$CONFIG_PATH/outputs"
-#python pred_segUNet.py $CONFIG_PATH/net2D_lc_full.ini
+CONFIG_PATH="$SCRATCH/output_segunet/outputs/all24-09T23-36-45_128slice"
+#CONFIG_PATH="$SCRATCH/output_segunet/outputs/BTz24-09T23-36-45_128slice"
 
-#CONFIG_PATH="$SCRATCH/output_segunet/outputs/21-09T12-47-56_128slice"
-#python utils_plot/postpros_plot.py "$CONFIG_PATH/outputs"
-#python pred_segUNet.py $CONFIG_PATH/net2D_lc_full.ini
-
-CONFIG_PATH="$SCRATCH/output_segunet/outputs/BCE_biastrain21-09T19-29-15_128slice"
-python utils_plot/postpros_plot.py "$CONFIG_PATH/outputs"
-python pred_segUNet.py $CONFIG_PATH/net2D_lc_full.ini
-
-deactivate
+source /project/c31/codes/miniconda3/etc/profile.d/conda.sh
+conda activate segunet-env
+python pred_segUNet.py $CONFIG_PATH/net_Unet_lc.ini
+conda deactivate

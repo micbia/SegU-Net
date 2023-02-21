@@ -5,6 +5,7 @@ from glob import glob
 import sys
 sys.path.insert(0,'../')
 from config.net_config import NetworkConfig
+from utils_network.metrics import get_avail_metris
 
 plt.rcParams['font.size'] = 12
 plt.rcParams['axes.linewidth'] = 1.1
@@ -19,8 +20,9 @@ os.chdir(path)
 config_file = glob('*.ini')[0]
 conf = NetworkConfig(config_file)
 metrics_wanted = conf.METRICS
-metrics_wanted.remove('precision')
-metrics_wanted.remove('balanced_accuracy')
+#metrics_wanted = ['mean_squared_error', 'r2score'] #conf.METRICS
+#metrics_wanted.remove('precision')
+#metrics_wanted.remove('balanced_accuracy')
 
 # Load Data
 epoch = conf.RESUME_EPOCH
@@ -67,7 +69,8 @@ for i_nm, (nm, vnm) in enumerate(zip(name_metric, name_val_metric)):
         i_cl += 1
 
 ax2.set_xlim(-1,loss.size)#, ax2.set_ylim(0.6, 0.9)
-ax2.set_ylim(0., 1.0)
+#ax2.set_ylim(0., 1.0)
+ax2.set_ylim(0.6, 0.85)
 ax4 = ax2.twinx() 
 ax4.semilogy(lr, color='k', alpha=0.4, label='Learning Rate') 
 ax4.set_ylabel('Learning Rate') 
@@ -80,7 +83,7 @@ ax1.xaxis.set_minor_locator(ticker.MultipleLocator(10))
 ax1.xaxis.set_major_locator(ticker.MultipleLocator(50))
 ax2.xaxis.set_minor_locator(ticker.MultipleLocator(10))
 ax2.xaxis.set_major_locator(ticker.MultipleLocator(50))
-ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+ax2.yaxis.set_major_locator(ticker.MultipleLocator(0.05))
 ax2.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
 
 ax1.tick_params(axis='both', length=7, width=1.1)

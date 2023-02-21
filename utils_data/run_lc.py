@@ -42,7 +42,7 @@ cwd = os.getcwd()
 # 21cmFAST parameters
 #uvfile = '/store/ska/sk09/segunet/uvmap_128_z7-20.pkl'
 #uvfile = '/store/ska/sk09/segunet/uvmap_200_z7-35.pkl'
-uvfile = '/store/ska/sk02/lightcones/EOS21/uvmap_1000_z7-10.pkl'
+uvfile = '/store/ska/sk02/lightcones/EOS21/uvmap_1000_z7-11.pkl'
 
 #params = {'HII_DIM':128, 'DIM':512, 'BOX_LEN':256}
 params = {'HII_DIM':200, 'DIM':600, 'BOX_LEN':300, 'USE_INTERPOLATION_TABLES': False}

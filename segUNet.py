@@ -210,7 +210,7 @@ with strategy.scope():
             model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
 
 # define callbacks
-callbacks = [EarlyStopping(patience=30, verbose=1),
+callbacks = [EarlyStopping(patience=100, verbose=1),
              ReduceLR(monitor='val_loss', factor=0.1, patience=10, min_lr=1e-7, verbose=1, wait=int(conf.RESUME_EPOCH-conf.BEST_EPOCH), best=RESUME_LOSS),
              SaveModelCheckpoint(PATH_OUT+'checkpoints/model-sem21cm_ep{epoch:d}.tf', monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, best=RESUME_LOSS),
              HistoryCheckpoint(filepath=PATH_OUT+'outputs/', verbose=0, save_freq=1, in_epoch=conf.RESUME_EPOCH)]

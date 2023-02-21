@@ -4,47 +4,10 @@ import numpy as np, tools21cm as t2c
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
+from .other_utils import PercentContours
 from sklearn.metrics import matthews_corrcoef
-
-import sys
-sys.path.append("..")
+from glob import glob
 from tqdm import tqdm
-
-def get_axis_locs(varr, to_round=10, step=5, fmt=int):    
-    v_max = int(round(varr.max()/to_round)*to_round) if int(round(varr.max()/to_round)*to_round) <= varr.max() else int(round(varr.max()/to_round)*to_round)-to_round
-    v_min = int(round(varr.min()/to_round)*to_round) if int(round(varr.min()/to_round)*to_round) >= varr.min() else int(round(varr.min()/to_round)*to_round)+to_round
-    v_plot = np.arange(v_min, v_max+step, step)
-    loc_v = np.array([np.argmin(abs(varr-v_plot[i])) for i in range(v_plot.size)]).astype(fmt)
-    return loc_v
-
-# Plots Predictions
-def plot_sample(X, y, preds, idx):
-    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-    ax[0].imshow(X[idx,...].squeeze(), origin='lower', cmap='jet')
-    ax[0].contour(y[idx].squeeze(), origin='lower', colors='k', levels=[0.5])
-    ax[0].set_title('True')
-    ax[0].grid(False)
-    ax[1].imshow(preds[idx].squeeze(), origin='lower', vmin=0, vmax=1, cmap='jet')
-    ax[1].contour(y[idx].squeeze(), origin='lower', colors='k', levels=[0.5])
-    ax[1].set_title('Predicted')
-    ax[1].grid(False)
-
-
-# Plots Predictions
-def plot_sample3D(X, y, preds, idx, path):
-    for i in range(X.shape[1]):
-        fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-        ax[0].imshow(X[idx,i,...].squeeze(), origin='lower', cmap='jet')
-        ax[0].contour(y[idx,i, ...].squeeze(), origin='lower', colors='k', levels=[0.5])
-        ax[0].set_title('True')
-        ax[0].grid(False)
-        ax[1].imshow(preds[idx,i, ...].squeeze(), origin='lower', vmin=0, vmax=1, cmap='jet')
-        ax[1].contour(y[idx,i, ...].squeeze(), origin='lower', colors='k', levels=[0.5])
-        ax[1].set_title('Predicted')
-        ax[1].grid(False)
-        plt.savefig(path+'train_prediction_idx%d_x%d.png' %(idx, i), bbox_inches='tight')
-        plt.close()
-
 
 # Plot Loss
 def plot_loss(output, path='./'):
@@ -109,50 +72,89 @@ def plot_slice(i, BOX_LEN, path_out):
     plt.close()
 
 
-def plot_lc(i, BOX_LEN, path_out, tobs=1000):
-    my_ext = [0, BOX_LEN, 0, BOX_LEN] 
+def plot_lc(i, path_out):
+    plt.rcParams['font.size'] = 20
+    plt.rcParams['xtick.direction'] = 'out'
+    plt.rcParams['ytick.direction'] = 'out'
+    plt.rcParams['xtick.top'] = True
+    plt.rcParams['ytick.right'] = True
+    plt.rcParams['axes.linewidth'] = 1.2
 
     redshift = np.loadtxt(path_out+'lc_redshifts.txt')
     idx, eff_fact, Rmfp, Tvir, seed = np.loadtxt(path_out+'parameters/astro_params.txt', unpack=True)
     zeta, Rmfp, Tvir = eff_fact[i], Rmfp[i], Tvir[i]
 
-    xH = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(path_out, i)) 
-    dT3 = t2c.read_cbin('%sdata/dT3_21cm_i%d.bin' %(path_out, i))  
-    HII_DIM = dT3.shape[0]
-    i_plot = dT3.shape[-1]//2
+    with open(path_out+'parameters/user_params.txt','r') as f:
+        user_par = eval(f.read())
+        BOX_LEN = user_par['BOX_LEN']
+        HII_DIM = user_par['HII_DIM']
+        angl_scale = np.linspace(0, BOX_LEN, HII_DIM)
 
-    fig = plt.figure(figsize=(15, 12))
+    xH = t2c.read_cbin('%sdata/xH_21cm_i%d.bin' %(path_out, i)) 
+    dT_input = t2c.read_cbin('%sdata/dT4pca4_21cm_i%d.bin' %(path_out, i))
+
+    mean_xH = np.mean(xH, axis=(0,1))
+    i_z, i_angl = np.argmin(np.abs(0.5-mean_xH)), HII_DIM//2
+
+    fig = plt.figure(figsize=(35, 8))
     gs = gridspec.GridSpec(nrows=1, ncols=2, width_ratios=[3,1], height_ratios=[1])
 
     # FIRST LC PLOT
-    ax1 = fig.add_subplot(gs[0])
-    ax1.set_title('$\zeta$ = %.3f   $R_{mfp}$ = %.3f Mpc   $log_{10}(T_{vir}^{min})$ = %.3f   $t_{obs}=%d\,h$' %(zeta, Rmfp, Tvir, tobs), fontsize=16)
-    im = ax1.imshow(dT3[:,HII_DIM//2,:], cmap='jet', origin='lower')
-    ax1.contour(xH[:,HII_DIM//2,:])
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax0.set_title('$\zeta$ = %.3f   $R_{mfp}$ = %.3f Mpc   $log_{10}(T_{vir}^{min})$ = %.3f' %(zeta, Rmfp, Tvir))
+    im = ax0.pcolormesh(redshift, angl_scale, dT_input[:,i_angl,:], cmap='jet')
+    ax0.contour(redshift, angl_scale, xH[:,i_angl,:])
 
-    idx_x = get_axis_locs(redshift, to_round=1, step=1)
-    idx_y = np.linspace(0, dT3.shape[0]-1, 7, endpoint=True, dtype=int)
-
-    ax1.set_xlabel('z', size=16)
-    ax1.set_ylabel('x [Mpc]', size=16)
-    ax1.set_xticks(idx_x), ax1.set_yticks(idx_y)
-    ax1.set_xticklabels([int(round(redshift[i_n])) for i_n in idx_x])
-    ax1.set_yticklabels(np.array(idx_y*BOX_LEN/HII_DIM, dtype=int))
-    #ax1.label_outer()
-    ax1.tick_params(axis='both', length=5, width=1.2)
-    ax1.tick_params(which='minor', axis='both', length=5, width=1.2)
+    ax0.set_xlabel('z'), ax0.set_ylabel('x [Mpc]')
+    ax0.tick_params(axis='both', length=5, width=1.2)
+    ax0.tick_params(which='minor', axis='both', length=5, width=1.2)
 
     # SECOND LC PLOT
     ax01 = fig.add_subplot(gs[0,1])
-    ax01.set_title('$z$ = %.3f   $\delta T_b$=%.3f' %(redshift[i_plot], np.mean(dT3[:,:,i_plot])), fontsize=18)
-    ax01.imshow(dT3[:,:,i_plot], cmap='jet', extent=my_ext, origin='lower', vmin=dT3.min(), vmax=dT3.max())
-    ax01.contour(xH[:,:,HII_DIM//2], extent=my_ext)
+    ax01.set_title('$z$=%.3f   $\overline{x}_{HI}$=%.3f' %(redshift[i_z], mean_xH[i_z]))
+    ax01.pcolormesh(angl_scale, angl_scale, dT_input[:,:,i_z], cmap='jet', vmin=dT_input.min(), vmax=dT_input.max())
+    ax01.contour(angl_scale, angl_scale, xH[:,:,i_z])
     fig.colorbar(im, ax=ax01, pad=0.01, fraction=0.048)
 
-    ax01.set_ylabel('y [Mpc]', size=16)
-    ax01.set_xlabel('x [Mpc]', size=16)
+    ax01.set_ylabel('y [Mpc]'), ax01.set_xlabel('x [Mpc]')
 
-    plt.rcParams['font.size'] = 16
-    plt.rcParams['axes.linewidth'] = 1.2
     plt.subplots_adjust(hspace=0.3, wspace=0.15)
-    plt.savefig('%slc_%dMpc_%d_i%d.png' %(path_out+'images/', BOX_LEN, dT3.shape[0], i), bbox_inches='tight')
+    plt.savefig('%slc_%dMpc_%d_i%d.png' %(path_out+'images/', BOX_LEN, HII_DIM, i), bbox_inches='tight')
+
+
+def plot_dataset(path_out):
+    plt.rcParams['font.size'] = 18
+
+    arr_size = glob('%sstats_i*.txt' %path_out)
+
+    redshift, mean_true, mcc = [], [], []
+    for i, fname in enumerate(arr_size):
+        if(i % 15 == 0):
+            try:
+                red, one_mcc, one_mean = np.loadtxt(fname, usecols=(0, 5, 9), unpack=True)
+            except:
+                red, one_mcc, one_mean = np.loadtxt(fname, usecols=(0, 5, 7), unpack=True)
+            if(i == 0):
+                mcc = one_mcc
+                redshift = red
+                mean_true = one_mean
+            else:
+                mcc = np.hstack((mcc, one_mcc))
+                redshift = np.hstack((redshift, red))
+                mean_true = np.hstack((mean_true, one_mean))
+
+    print(np.shape(redshift))
+    redshift, mcc, mean_true = np.array(redshift), np.array(mcc), np.array(mean_true)
+
+    fig, ax = plt.subplots(figsize=(10,8), ncols=1)
+    sc = ax.scatter(mean_true, mcc, c=redshift, vmin=redshift.min(), vmax=redshift.max(), s=25, cmap='plasma', marker='.')
+    PercentContours(x=mean_true, y=mcc, bins='lin', colour='lime', style=['--', '-'], perc_arr=[0.95, 0.68])
+    ax.hlines(y=np.mean(mcc), xmin=0, xmax=1, ls='--', label=r'$r_{\phi}$ = %.3f' %(np.mean(mcc)), alpha=0.8, color='tab:blue', zorder=3)
+    
+    plt.legend(loc=1)
+    ax.set_xlim(mean_true.min()-0.02, mean_true.max()+0.02), ax.set_xlabel(r'$\rm x^v_{HI}$', size=20)
+    ax.set_ylim(0, 1), ax.set_ylabel(r'$\rm r_{\phi}$', size=20)
+    ax.set_yticks(np.arange(0, 1.1, 0.1)), ax.set_xticks(np.arange(0, 1.1, 0.2))
+    fig.colorbar(sc, ax=ax, pad=0.01, label=r'$\rm z$')
+    fig.savefig('%smcc_dataset.png' %path_out, bbox_inches='tight')
+    

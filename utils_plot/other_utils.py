@@ -22,6 +22,38 @@ class MidpointNormalize(colors.Normalize):
         return np.ma.masked_array(np.interp(value, x, y), np.isnan(value))
 
 
+def PercentContours(x, y, bins=None, colour='green', style=[':', '--', '-'], perc_arr=[0.99, 0.95, 0.68], lw=3):
+    if(type(bins) == int):
+        hist, xedges, yedges = np.histogram2d(x, y, bins=bins)
+    elif(bins == 'log'):
+        x_edges = np.logspace(np.log10(np.min(x)), np.log10(np.max(x)), 25)
+        y_edges = np.logspace(np.log10(np.min(y)), np.log10(np.max(y)), 25)
+        hist, xedges, yedges = np.histogram2d(x, y, bins=(x_edges, y_edges))
+    elif(bins == 'lin'):
+        x_edges = np.linspace(np.min(x), np.max(x), 25)
+        y_edges = np.linspace(np.min(y), np.max(y), 25)
+        hist, xedges, yedges = np.histogram2d(x, y, bins=(x_edges, y_edges))
+
+    sort_hist = np.sort(hist.flatten())[::-1]
+    perc = (np.array(perc_arr)*np.sum(sort_hist)).astype(int)
+    levels = np.zeros_like(perc)
+
+    j = -1
+    for i, val in enumerate(sort_hist):
+        if(np.sum(sort_hist[:i]) >= perc[j]):
+            levels[j] = val
+            if(j == -len(perc)):
+                break
+            j -= 1
+    #c = plt.contour(hist.T, extent=[xedges.min(), xedges.max(), yedges.min(), yedges.max()], levels=levels, colors=colour, linestyles=style, linewidths=lw)
+    x_plot, y_plot = 0.5*(xedges[1:]+xedges[:-1]), 0.5*(yedges[1:]+yedges[:-1])
+
+    c = plt.contour(x_plot, y_plot, hist.T, levels=levels, colors=colour, linestyles=style, linewidths=lw)
+
+    c.levels = np.array(perc_arr)*100.
+    plt.clabel(c, c.levels, inline=True,inline_spacing=10, fmt='%d%%', fontsize=16)
+
+
 def MergeImages(new_image_name, old_image_name, output_path='./', form='v', delete_old=False):
     """ Merge images togheter to create new image.
         Parameters:

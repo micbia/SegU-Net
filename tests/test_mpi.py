@@ -6,12 +6,14 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 nprocs = comm.Get_size()
 
+print('I am rank %d' %rank)
+
+"""
 redshift = np.arange(7.001, 7.021, 0.001)
 
 resume_step = 0
 perrank = redshift.size//nprocs
 
-"""
 # Broadcasting a variable
 if(rank == 0):
 	nr_procs_done = 0
@@ -19,6 +21,8 @@ else:
     nr_procs_done = None
 
 nr_procs_done = comm.bcast(nr_procs_done, root=0)
+
+"""
 
 """
 comm.Barrier()
@@ -41,7 +45,7 @@ if(rank == 0):
 	print(' gather done:\t%s\t%s' %(datetime.now().strftime('%H:%M:%S'), str(nr_procs_done)))
 
 comm.Barrier()
-
+"""
 
 
 

@@ -88,7 +88,7 @@ class LightConeGenerator(DataGenerator):
         
         #self.random_xHI = random.random()
         #self.random_xHI = round(random.uniform(0.2, 0.3), 4)        # TODO: change this before recompile
-        self.random_z = round(random.uniform(9., 10.), 5)
+        #self.random_z = round(random.uniform(9., 10.), 5)
 
         X = np.zeros((np.append(self.batch_size, self.data_shape)))
         y = np.zeros((np.append(self.batch_size, self.data_shape)))
@@ -106,7 +106,7 @@ class LightConeGenerator(DataGenerator):
                 tar_df = pd.DataFrame(data=tar_content, index=tar_names)
 
                 # extract file
-                member = tar_df.loc['%sdT3_21cm_i%d.bin' %(self.path_in_zip, idx),0]
+                member = tar_df.loc['%sdT4_21cm_i%d.bin' %(self.path_in_zip, idx),0]
                 temp_data = mytar.extractfile(member).read()
                 temp_mesh = np.frombuffer(temp_data, count=3, dtype='int32')
                 dT = np.frombuffer(temp_data, count=np.prod(temp_mesh), dtype='float32').reshape(temp_mesh, order='C')
@@ -121,7 +121,7 @@ class LightConeGenerator(DataGenerator):
             else:
                 # read LC
                 #dT = self._read_cbin(filename='%sdT3_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
-                dT = self._read_cbin(filename='%sdT4pca_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
+                dT = self._read_cbin(filename='%sdT4pca4_21cm_i%d.bin' %(self.path+'data/', idx), dimensions=3)
                 xH = self._read_cbin(filename='%s%s_21cm_i%d.bin' %(self.path+'data/', self.data_type, idx), dimensions=3)
                 
                 # apply manipolation on the LC data
@@ -136,9 +136,9 @@ class LightConeGenerator(DataGenerator):
     def _lc_data(self, x, y):
         if(np.min(self.data_shape) == np.max(self.data_shape)):
             # for U-Net on slices
-            #rseed2 = random.randint(0, x.shape[-1]-1)
+            rseed2 = random.randint(0, x.shape[-1]-1)
             #rseed2 = np.argmin(abs(np.mean(y, axis=(0,1)) - self.random_xHI))
-            rseed2 = np.argmin(abs(self.redshift - self.random_z))
+            #rseed2 = np.argmin(abs(self.redshift - self.random_z))
 
             dT_sampled = x[:, :, rseed2].astype(np.float32)
             xH_sampled = y[:, :, rseed2].astype(np.float32)

@@ -60,9 +60,17 @@ def get_avail_metris(mname):
         metric = specificy
     elif(mname == 'balanced_accuracy'):
         metric = balanced_accuracy
+    elif(mname == 'pcc'):
+        metric = pcc
     else:
         ValueError(' No corresponding metric found!')
     return metric
+
+def pcc(y_true, y_pred):
+    # thie module is to use on tensors (so for Tensorflow or Keras)
+    numerator = K.sum(y_true - K.mean(y_true)) * K.sum(y_pred - K.mean(y_pred))
+    denominator = K.sqrt(K.sum(K.pow(y_true - K.mean(y_true), 2))) * K.sqrt(K.sum(K.pow(y_pred - K.mean(y_pred), 2)))
+    return numerator / (denominator + K.epsilon())
 
 def matthews_coef(y_true, y_pred):
     # thie module is to use on tensors (so for Tensorflow or Keras)
